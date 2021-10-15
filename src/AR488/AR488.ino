@@ -1,6 +1,7 @@
 //#pragma GCC diagnostic push
 //#pragma GCC diagnostic ignored "-Wtype-limits"
 //#pragma GCC diagnostic ignored "-Wunused-variable"
+#include <Arduino.h>
 
 #ifdef __AVR__
   #include <avr/wdt.h>
@@ -10,16 +11,16 @@
 
 #include "AR488_Config.h"
 #include "AR488_Layouts.h"
-#include "AR488_Eeprom.h"
 
 #ifdef USE_INTERRUPTS
   #ifdef __AVR__
     #include <avr/interrupt.h>
   #endif
 #endif
+
 #ifdef E2END
+  #include "AR488_Eeprom.h"
   #include <EEPROM.h>
-  
 #endif
 
 #ifdef AR_BT_EN
@@ -204,48 +205,6 @@ const char * const macros[] PROGMEM = {
 /***** vvvvvvvvvvvvvvvvvvvvvv *****/
 
 
-/***** Serial communications port *****/
-/*
-#ifdef AR_CDC_SERIAL
-  extern Serial_ *arSerial;
-  #ifndef DB_SERIAL_PORT
-    extern Serial_ *dbSerial;
-  #endif
-#endif
-#ifdef AR_HW_SERIAL
-  extern HardwareSerial *arSerial;
-  #ifndef DB_SERIAL_PORT
-    extern HardwareSerial *dbSerial;
-  #endif
-#endif
-// Note: SoftwareSerial support conflicts with PCINT support
-#ifdef AR_SW_SERIAL
-  #include <SoftwareSerial.h>
-  extern SoftwareSerial *arSerial;
-  #ifndef DB_SERIAL_PORT
-    extern SoftwareSerial *dbSerial;
-  #endif
-#endif
-*/
-
-/***** Serial debug Port *****/
-/*
-#ifdef DB_SERIAL_PORT
-  #ifdef DB_CDC_SERIAL
-    extern Serial_ *dbSerial;
-  #endif
-  #ifdef DB_HW_SERIAL
-    extern HardwareSerial *dbSerial;
-  #endif
-  // Note: SoftwareSerial support conflicts with PCINT support
-  #ifdef DB_SW_SERIAL
-    #include <SoftwareSerial.h>
-    extern SoftwareSerial *dbSerial;
-  #endif
-#endif
-*/
-
-
 #ifdef AR_CDC_SERIAL
   Serial_ *arSerial = &(AR_SERIAL_PORT);
   #ifndef DB_SERIAL_PORT
@@ -289,7 +248,7 @@ const char * const macros[] PROGMEM = {
 
 /***** PARSE BUFFERS *****/
 /*
- * Note: Ardiono serial input buffer is 64 
+ * Note: Ardiono serial input buffer is 64
  */
 // Serial input parsing buffer
 static const uint8_t PBSIZE = 128;
@@ -360,7 +319,7 @@ uint8_t pbPtr = 0;
 #define PLUS 0x2B   // '+' character
 
 /***** Controller configuration *****/
-/*   
+/*
  * Default values set for controller mode
  */
 union AR488conf{
@@ -399,7 +358,7 @@ uint8_t cstate = 0;
 bool isVerb = false;
 
 // CR/LF terminated line ready to process
-uint8_t lnRdy = 0;      
+uint8_t lnRdy = 0;
 
 // GPIB data receive flags
 //bool isReading = false; // Is a GPIB read in progress?
@@ -451,7 +410,7 @@ bool sendIdn = false;
 /***** COMMON VARIABLES SECTION *****/
 /************************************/
 
-
+#include "AR488.h"
 
 /*******************************/
 /***** COMMON CODE SECTION *****/
@@ -487,7 +446,7 @@ void setup() {
 
  // Initialise serial comms over USB or Bluetooth
 #ifdef AR_BT_EN
-  // Initialise Bluetooth  
+  // Initialise Bluetooth
   btInit();
   arSerial->begin(AR_BT_BAUD);
 #else
@@ -501,7 +460,7 @@ void setup() {
 
 
 // Un-comment for diagnostic purposes
-/* 
+/*
   #if defined(__AVR_ATmega32U4__)
     while(!*arSerial)
     ;
@@ -542,7 +501,7 @@ void setup() {
   if (AR488.cmode==2) {
     // Set controller mode on SN75161/2
     digitalWrite(SN7516X_TE, LOW);
-    #ifdef SN7516X_DC 
+    #ifdef SN7516X_DC
       digitalWrite(SN7516X_DC, LOW);
     #endif
     #ifdef SN7516X_SC
@@ -600,7 +559,7 @@ void loop() {
 /*** Pin Hooks ***/
 /*
  * Not all boards support interrupts or have PCINTs. In this
- * case, use in-loop checking to detect when SRQ and ATN have 
+ * case, use in-loop checking to detect when SRQ and ATN have
  * been signalled
  */
 #ifndef USE_INTERRUPTS
@@ -609,7 +568,7 @@ void loop() {
 #endif
 
 /*** Process the buffer ***/
-/* Each received char is passed through parser until an un-escaped 
+/* Each received char is passed through parser until an un-escaped
  * CR is encountered. If we have a command then parse and execute.
  * If the line is data (inclding direct instrument commands) then
  * send it to the instrument.
@@ -676,7 +635,7 @@ void loop() {
 
   // Check serial buffer
   lnRdy = serialIn_h();
-  
+
   delayMicroseconds(5);
 }
 /***** END MAIN LOOP *****/
@@ -713,13 +672,13 @@ void initController() {
 /***** Serial event handler *****/
 /*
  * Note: the Arduino serial buffer is 64 characters long. Characters are stored in
- * this buffer until serialEvent_h() is called. parsedInput() takes a character at 
+ * this buffer until serialEvent_h() is called. parsedInput() takes a character at
  * a time and places it into the 256 character parse buffer whereupon it is parsed
  * to determine whether a command or data are present.
  * lnRdy=0: terminator not detected yet
  * lnRdy=1: terminator detected, sequence in parse buffer is a ++ command
  * lnRdy=2: terminator detected, sequence in parse buffer is data or direct instrument command
- */ 
+ */
 uint8_t serialIn_h() {
   uint8_t bufferStatus = 0;
   // Parse serial input until we have detected a line terminator
@@ -730,7 +689,7 @@ uint8_t serialIn_h() {
 #ifdef DEBUG1
   if (bufferStatus) {
     dbSerial->print(F("BufferStatus: "));
-    dbSerial->println(bufferStatus);  
+    dbSerial->println(bufferStatus);
   }
 #endif
 
@@ -801,7 +760,7 @@ uint8_t parseInput(char c) {
               if (pBuf[2]==0x21) {
                 r = 3;
                 flushPbuf();
-              // Otherwise flag command received and ready to process 
+              // Otherwise flag command received and ready to process
               }else{
                 r = 1;
               }
@@ -916,8 +875,8 @@ void flushPbuf() {
 
 
 /***** Comand function record *****/
-struct cmdRec { 
-  const char* token; 
+struct cmdRec {
+  const char* token;
   int opmode;
   void (*handler)(char *);
 };
@@ -928,13 +887,13 @@ struct cmdRec {
  * Commands without parameters require casting to a pointer
  * requiring a char* parameter. The functon is called with
  * NULL by the command processor.
- * 
+ *
  * Format: token, mode, function_ptr
- * Mode: 1=device; 2=controller; 3=both; 
+ * Mode: 1=device; 2=controller; 3=both;
  */
-static cmdRec cmdHidx [] = { 
- 
-  { "addr",        3, addr_h      }, 
+static cmdRec cmdHidx [] = {
+
+  { "addr",        3, addr_h      },
   { "allspoll",    2, (void(*)(char*)) aspoll_h  },
   { "auto",        2, amode_h     },
   { "clr",         2, (void(*)(char*)) clr_h     },
@@ -1054,7 +1013,7 @@ void getCmd(char *buffr) {
 
   char *token;  // Pointer to command token
   char *params; // Pointer to parameters (remaining buffer characters)
-  
+
   int casize = sizeof(cmdHidx) / sizeof(cmdHidx[0]);
   int i = 0;
 
@@ -1063,7 +1022,7 @@ void getCmd(char *buffr) {
   dbSerial->print(buffr); dbSerial->print(F(" - length:")); dbSerial->println(strlen(buffr));
 #endif
 
-  // If terminator on blank line then return immediately without processing anything 
+  // If terminator on blank line then return immediately without processing anything
   if (buffr[0] == 0x00) return;
   if (buffr[0] == CR) return;
   if (buffr[0] == LF) return;
@@ -1092,7 +1051,7 @@ void getCmd(char *buffr) {
       // If its a command with parameters
       // Copy command parameters to params and call handler with parameters
       params = token + strlen(token) + 1;
-  
+
       // If command parameters were specified
       if (strlen(params) > 0) {
 #ifdef DEBUG1
@@ -1103,7 +1062,7 @@ void getCmd(char *buffr) {
       }else{
         // Call handler without parameters
         cmdHidx[i].handler(NULL);
-      }   
+      }
     }else{
       errBadCmd();
       if (isVerb) arSerial->println(F("Command not available in this mode."));
@@ -1113,7 +1072,7 @@ void getCmd(char *buffr) {
     // No valid command found
     errBadCmd();
   }
- 
+
 }
 
 
@@ -1129,7 +1088,7 @@ void printHex(char *buffr, int dsize) {
 /***** Check whether a parameter is in range *****/
 /* Convert string to integer and check whether value is within
  * lowl to higl inclusive. Also returns converted text in param
- * to a uint16_t integer in rval. Returns true if successful, 
+ * to a uint16_t integer in rval. Returns true if successful,
  * false if not
 */
 bool notInRange(char *param, uint16_t lowl, uint16_t higl, uint16_t &rval) {
@@ -1514,7 +1473,7 @@ void loc_h(char *params) {
 
 /***** Assert IFC for 150 microseconds *****/
 /* This indicates that the AR488 the Controller-in-Charge on
- * the bus and causes all interfaces to return to their idle 
+ * the bus and causes all interfaces to return to their idle
  * state
  */
 void ifc_h() {
@@ -1594,7 +1553,7 @@ void trg_h(char *params) {
  * For other devices, we restart the program instead by
  * jumping to address 0x0000. This is not a hardware reset
  * and will not reset a crashed MCU, but it will re-start
- * the interface program and re-initialise all parameters. 
+ * the interface program and re-initialise all parameters.
  */
 void rst_h() {
 #ifdef WDTO_1S
@@ -1609,7 +1568,9 @@ void rst_h() {
   };
 #else
   // Otherwise restart program (soft reset)
+#if defined(__AVR__)
   asm volatile ("  jmp 0");
+#endif
 #endif
 }
 
@@ -1839,6 +1800,7 @@ void lon_h(char *params) {
 }
 
 
+
 /***** Set the SRQ signal *****/
 void setSrqSig() {
   // Set SRQ line to OUTPUT HIGH (asserted)
@@ -1853,7 +1815,6 @@ void clrSrqSig() {
   setGpibState(0b00000000, 0b01000000, 1);
   setGpibState(0b01000000, 0b01000000, 0);
 }
-
 
 
 /***********************************/
@@ -1988,8 +1949,8 @@ arSerial->println(idparams);
 */
 
   id_h(idparams);
-  
-/*  
+
+/*
   if (params != NULL) {
     len = strlen(params);
     if (len>47) len=47; // Ignore anything over 47 characters
@@ -2000,7 +1961,7 @@ arSerial->println(idparams);
       arSerial->println(params);
     };
   }
-*/  
+*/
 }
 
 
@@ -2129,7 +2090,7 @@ void xdiag_h(char *params){
   char *param;
   uint8_t mode = 0;
   uint8_t val = 0;
-  
+
   // Get first parameter (mode = 0 or 1)
   param = strtok(params, " \t");
   if (param != NULL) {
@@ -2212,7 +2173,7 @@ void id_h(char *params) {
     dlen = strlen(datastr);
     if (dlen) {
       if (strncmp(keyword, "verstr", 6)==0) {
-#ifdef DEBUG10       
+#ifdef DEBUG10
         arSerial->print(F("Keyword: "));
         arSerial->println(keyword);
         arSerial->print(F("DataStr: "));
@@ -2255,16 +2216,16 @@ void id_h(char *params) {
       if (strncmp(keyword, "verstr", 6)==0) {
         arSerial->println(AR488.vstr);
         return;
-      }     
+      }
       if (strncmp(keyword, "name", 4)==0) {
         arSerial->println(AR488.sname);
-        return;      
+        return;
       }
       if (strncmp(keyword, "serial", 6)==0) {
         memset(serialStr, '\0', 10);
-        snprintf(serialStr, 10, "%09lu", AR488.serial);  // Max str length = 10-1 i.e 9 digits + null terminator 
+        snprintf(serialStr, 10, "%09lu", AR488.serial);  // Max str length = 10-1 i.e 9 digits + null terminator
         arSerial->println(serialStr);
-        return;    
+        return;
       }
     }
   }
@@ -2279,13 +2240,13 @@ void idn_h(char * params){
     AR488.idn = (uint8_t)val;
     if (isVerb) {
       arSerial->print(F("Sending IDN: "));
-      arSerial->print(val ? "Enabled" : "Disabled"); 
+      arSerial->print(val ? "Enabled" : "Disabled");
       if (val==2) arSerial->print(F(" with serial number"));
       arSerial->println();
     };
   } else {
     arSerial->println(AR488.idn, DEC);
-  }  
+  }
 }
 
 
@@ -2306,7 +2267,7 @@ void attnRequired() {
   bool spe = false;
   bool spd = false;
   bool eoiDetected = false;
-  
+
   // Set device listner active state (assert NDAC+NRFD (low), DAV=INPUT_PULLUP)
   setGpibControls(DLAS);
 
@@ -2346,7 +2307,7 @@ void attnRequired() {
 
       // Serial poll disable request
       if (db==GC_SPD) spd = true;
- 
+
       // Unlisten
       if (db==GC_UNL) unl_h();
 
@@ -2354,14 +2315,14 @@ void attnRequired() {
       if (db==GC_UNT) unt_h();
 
     }
-  
+
   }
 
 #ifdef DEBUG5
   dbSerial->println(F("End ATN loop."));
 #endif
 
-  if (mla) { 
+  if (mla) {
 #ifdef DEBUG5
     dbSerial->println(F("Listening..."));
 #endif
@@ -2476,7 +2437,7 @@ void lonMode(){
 
   // Clear the buffer to prevent it getting blocked
   if (lnRdy==2) flushPbuf();
-  
+
 }
 
 
@@ -2636,7 +2597,7 @@ void gpibSendData(char *data, uint8_t dsize) {
 #ifdef DEBUG3
     dbSerial->println(F("<- End of send."));
 #endif
- 
+
 }
 
 
@@ -2676,7 +2637,7 @@ bool gpibReceiveData() {
     Wait_on_pin_state(HIGH, NRFD, AR488.rtmo);
     // Set GPIB control lines to controller read mode
     setGpibControls(CLAS);
-    
+
   // Set up for reading in Device mode
   } else {  // Device mode
     // Set GPIB controls to device read mode
@@ -2712,7 +2673,7 @@ bool gpibReceiveData() {
 
     // When reading with amode=3 or EOI check serial input and break loop if neccessary
     if ((AR488.amode==3) || rEoi) lnRdy = serialIn_h();
-    
+
     // Line terminator detected (loop breaks on command being detected or data buffer full)
     if (lnRdy > 0) {
       aRead = false;  // Stop auto read
@@ -2939,7 +2900,7 @@ bool gpibWriteByte(uint8_t db) {
 
 /***** GPIB send byte handshake *****/
 bool gpibWriteByteHandshake(uint8_t db) {
-  
+
     // Wait for NDAC to go LOW (indicating that devices are at attention)
   if (Wait_on_pin_state(LOW, NDAC, AR488.rtmo)) {
     if (isVerb) arSerial->println(F("gpibWriteByte: timeout waiting for receiver attention [NDAC asserted]"));
@@ -3013,7 +2974,7 @@ bool uaddrDev() {
  * Returns false on success, true on timeout.
  * Pin MUST be set as INPUT_PULLUP otherwise it will not change and simply time out!
  */
-boolean Wait_on_pin_state(uint8_t state, uint8_t pin, int interval) {
+bool Wait_on_pin_state(uint8_t state, uint8_t pin, int interval) {
 
   unsigned long timeout = millis() + interval;
   bool atnStat = (digitalRead(ATN) ? false : true); // Set to reverse - asserted=true; unasserted=false;
@@ -3055,7 +3016,7 @@ void setGpibControls(uint8_t state) {
   #ifdef SN7516X_SC
         digitalWrite(SN7516X_SC,HIGH);
   #endif
-#endif      
+#endif
 #ifdef DEBUG2
       dbSerial->println(F("Initialised GPIB control mode"));
 #endif
@@ -3066,7 +3027,7 @@ void setGpibControls(uint8_t state) {
       setGpibState(0b11011111, 0b10011110, 0);
 #ifdef SN7516X
       digitalWrite(SN7516X_TE,LOW);
-#endif      
+#endif
 #ifdef DEBUG2
       dbSerial->println(F("Set GPIB lines to idle state"));
 #endif
@@ -3077,7 +3038,7 @@ void setGpibControls(uint8_t state) {
       setGpibState(0b01011111, 0b10011111, 0);
 #ifdef SN7516X
       digitalWrite(SN7516X_TE,HIGH);
-#endif      
+#endif
 #ifdef DEBUG2
       dbSerial->println(F("Set GPIB lines for sending a command"));
 #endif
@@ -3089,7 +3050,7 @@ void setGpibControls(uint8_t state) {
       setGpibState(0b11011000, 0b10011110, 0);
 #ifdef SN7516X
       digitalWrite(SN7516X_TE,LOW);
-#endif      
+#endif
 #ifdef DEBUG2
       dbSerial->println(F("Set GPIB lines for reading data"));
 #endif
@@ -3100,7 +3061,7 @@ void setGpibControls(uint8_t state) {
       setGpibState(0b11011111, 0b10011110, 0);
 #ifdef SN7516X
       digitalWrite(SN7516X_TE,HIGH);
-#endif      
+#endif
 #ifdef DEBUG2
       dbSerial->println(F("Set GPIB lines for writing data"));
 #endif
@@ -3118,7 +3079,7 @@ void setGpibControls(uint8_t state) {
   #ifdef SN7516X_SC
         digitalWrite(SN7516X_SC,LOW);
   #endif
-#endif      
+#endif
       setGpibState(0b00000000, 0b11111111, 1);
       setGpibState(0b11111111, 0b11111111, 0);
 #ifdef DEBUG2
@@ -3129,7 +3090,7 @@ void setGpibControls(uint8_t state) {
     case DIDS:  // Device idle state
 #ifdef SN7516X
       digitalWrite(SN7516X_TE,HIGH);
-#endif      
+#endif
       setGpibState(0b00000000, 0b00001110, 1);
       setGpibState(0b11111111, 0b00001110, 0);
 #ifdef DEBUG2
@@ -3140,7 +3101,7 @@ void setGpibControls(uint8_t state) {
     case DLAS:  // Device listner active (actively listening - can handshake)
 #ifdef SN7516X
       digitalWrite(SN7516X_TE,LOW);
-#endif      
+#endif
       setGpibState(0b00000110, 0b00001110, 1);
       setGpibState(0b11111001, 0b00001110, 0);
 #ifdef DEBUG2
@@ -3151,7 +3112,7 @@ void setGpibControls(uint8_t state) {
     case DTAS:  // Device talker active (sending data)
 #ifdef SN7516X
       digitalWrite(SN7516X_TE,HIGH);
-#endif      
+#endif
       setGpibState(0b00001000, 0b00001110, 1);
       setGpibState(0b11111001, 0b00001110, 0);
 #ifdef DEBUG2

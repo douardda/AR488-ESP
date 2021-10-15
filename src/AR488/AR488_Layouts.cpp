@@ -215,10 +215,10 @@ void setGpibState(uint8_t bits, uint8_t mask, uint8_t mode) {
 //  uint8_t portDb = (bits & 0x80) + ((bits & 0x40) >> 4) + ((bits & 0x20) >> 2);
 //  uint8_t portDm = (mask & 0x80) + ((mask & 0x40) >> 4) + ((mask & 0x20) >> 2);
 
-  // PORT B - keep bits 7 and 6, but rotate right 2 postions to set bits 5 and 4 on port 
+  // PORT B - keep bits 7 and 6, but rotate right 2 postions to set bits 5 and 4 on port
   uint8_t portBb = ((bits & 0xC0) >> 2);
   uint8_t portBm = ((mask & 0xC0) >> 2);
- 
+
   // Set registers: register = (register & ~bitmask) | (value & bitmask)
   // Mask: 0=unaffected; 1=to be changed
 
@@ -321,7 +321,7 @@ uint8_t readGpibDbus() {
 /***** Set the status of the GPIB data bus wires with a byte of datacd ~/test *****/
 void setGpibDbus(uint8_t db) {
   uint8_t val = 0;
-  
+
   // Set data pins as outputs
   DDRA |= 0b01010101 ;
   DDRC |= 0b10101010 ;
@@ -472,7 +472,7 @@ void readyGpibDbus() {
 uint8_t readGpibDbus() {
   uint8_t db = 0;
   uint8_t val = 0;
-  
+
   // Read the byte of data on the bus (GPIB states are inverted)
   val = ~((PINA & 0b10101010) + (PINC & 0b01010101));
 
@@ -493,7 +493,7 @@ uint8_t readGpibDbus() {
 /***** Set the status of the GPIB data bus wires with a byte of datacd ~/test *****/
 void setGpibDbus(uint8_t db) {
   uint8_t val = 0;
-  
+
   // Set data pins as outputs
   DDRA |= 0b10101010 ;
   DDRC |= 0b01010101 ;
@@ -696,7 +696,7 @@ void setGpibDbus(uint8_t db) {
  * REN   5   PORTC bit 6   byte bit 5
  * SRQ   7   PORTE bit 6   byte bit 6
  * ATN   2   PORTD bit 1   byte bit 7
- * 
+ *
  * It would be more efficient (and easier to read the code) if the bits in the above
  * control word were assigned by name to match suitable port bits : then NDAC,NRFD and DAV
  * could be positioned at bits 4,5,6 to be placed in port F without shifting.
@@ -816,7 +816,7 @@ void readyGpibDbus() {
   DDRC &= 0b10111111 ;
   DDRD &= 0b11101111 ;
   DDRF &= 0b00001100 ;
- 
+
   PORTC |= 0b01000000; // PORTD bit 4 input_pullup
   PORTD |= 0b00010000; // PORTD bit 6 input_pullup
   PORTF |= 0b11110011; // PORTC bits 7,6,5,4,1,0 input_pullup
@@ -918,11 +918,11 @@ uint8_t reverseBits(uint8_t dbyte) {
 //static const uint8_t SRQint = 0b00000100;
 
 void atnISR() {
-  isATN = (digitalRead(ATN) ? false : true);  
+  isATN = (digitalRead(ATN) ? false : true);
 }
 
 void srqISR() {
-  isSRQ = (digitalRead(SRQ) ? false : true);  
+  isSRQ = (digitalRead(SRQ) ? false : true);
 }
 
 void interruptsEn(){
@@ -975,7 +975,7 @@ void setGpibDbus(uint8_t db) {
     pinMode(databus[i], OUTPUT);
     digitalWrite(databus[i], ((db&(1<<i)) ? LOW : HIGH) );
   }
-  
+
 }
 
 
@@ -1004,6 +1004,23 @@ void setGpibState(uint8_t bits, uint8_t mask, uint8_t mode) {
   }
 
 }
+
+#ifdef USE_INTERRUPTS
+
+void atnISR() {
+  isATN = (digitalRead(ATN) ? false : true);
+}
+
+void srqISR() {
+  isSRQ = (digitalRead(SRQ) ? false : true);
+}
+
+void interruptsEn(){
+  attachInterrupt(digitalPinToInterrupt(ATN), atnISR, CHANGE)
+  attachInterrupt(digitalPinToInterrupt(SRQ), srqISR, CHANGE)
+}
+
+#endif //USE_INTERRUPTS
 
 #endif
 /***** ^^^^^^^^^^^^^^^^^^^^^^^^^ *****/

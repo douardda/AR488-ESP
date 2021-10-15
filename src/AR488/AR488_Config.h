@@ -23,7 +23,7 @@
 /*
  * Uncomment to use custom board layout
  */
-//#define AR488_CUSTOM
+// #define AR488_CUSTOM
 
 /*
  * Configure the appropriate board/layout section
@@ -78,7 +78,7 @@
     #define AR_HW_SERIAL
     #define AR_SERIAL_PORT Serial1
   #endif
-  
+
 /*** MEGA 2560 board ***/
 #elif __AVR_ATmega2560__
   /*** Board/layout selection ***/
@@ -86,10 +86,10 @@
   //#define AR488_MEGA2560_E1
   //#define AR488_MEGA2560_E2
   /*** Serial ports ***/
-  // Mega 2560 supports Serial, Serial1, Serial2, Serial3. Since the pins 
+  // Mega 2560 supports Serial, Serial1, Serial2, Serial3. Since the pins
   // associated with Serial2 are used in the default pin layout, Serial2
   // is unavailable. The default port is 'Serial'. Choose ONE port only.
-/*  
+/*
   // and associated SERIALEVENT definition
 */
   #define AR_HW_SERIAL
@@ -122,8 +122,8 @@
 /*
  * With UNO. NANO and MEGA boards with pre-defined layouts,
  * USE_INTERRUPTS can and should be used.
- * With the AR488_CUSTOM layout and unknown boards, USE_INTERRUPTS must  
- * be commented out. Interrupts are used on pre-defined AVR board layouts 
+ * With the AR488_CUSTOM layout and unknown boards, USE_INTERRUPTS must
+ * be commented out. Interrupts are used on pre-defined AVR board layouts
  * and will respond faster, however in-loop checking for state of pin states
  * can be supported with any board layout.
  */
@@ -143,9 +143,9 @@
  * interface to be configured at startup. Macros 1 - 9 can be
  * used to execute a sequence of commands with a single command
  * i.e, ++macro n, where n is the number of the macro
- * 
- * USE_MACROS must be enabled to enable the macro feature including 
- * MACRO_0 (the startup macro). RUN_STARTUP must be uncommented to 
+ *
+ * USE_MACROS must be enabled to enable the macro feature including
+ * MACRO_0 (the startup macro). RUN_STARTUP must be uncommented to
  * run the startup macro when the interface boots up
  */
 //#define USE_MACROS    // Enable the macro feature
@@ -207,37 +207,6 @@
 /***** ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ *****/
 /***** AR488 GLOBAL CONFIGURATION HEADER *****/
 /*********************************************/
-
-
-/*******************************/
-/***** AR488 CUSTOM LAYOUT *****/
-/***** vvvvvvvvvvvvvvvvvvv *****/
-#ifdef AR488_CUSTOM
-
-#define DIO1  A0  /* GPIB 1  */
-#define DIO2  A1  /* GPIB 2  */
-#define DIO3  A2  /* GPIB 3  */
-#define DIO4  A3  /* GPIB 4  */
-#define DIO5  A4  /* GPIB 13 */
-#define DIO6  A5  /* GPIB 14 */
-#define DIO7  4   /* GPIB 15 */
-#define DIO8  5   /* GPIB 16 */
-
-#define IFC   8   /* GPIB 9  */
-#define NDAC  9   /* GPIB 8  */
-#define NRFD  10  /* GPIB 7  */
-#define DAV   11  /* GPIB 6  */
-#define EOI   12  /* GPIB 5  */
-
-#define SRQ   2   /* GPIB 10 */
-#define REN   3   /* GPIB 17 */
-#define ATN   7   /* GPIB 11 */
-
-#endif
-/***** ^^^^^^^^^^^^^^^^^^^ *****/
-/***** AR488 CUSTOM LAYOUT *****/
-/*******************************/
-
 
 
 /********************************/
