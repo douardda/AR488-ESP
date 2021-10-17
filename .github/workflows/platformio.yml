@@ -1,0 +1,47 @@
+name: PlatformIO CI
+
+on: [push]
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: Cache pip
+      uses: actions/cache@v2
+      with:
+        path: ~/.cache/pip
+        key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
+        restore-keys: |
+          ${{ runner.os }}-pip-
+    - name: Cache PlatformIO
+      uses: actions/cache@v2
+      with:
+        path: ~/.platformio
+        key: ${{ runner.os }}-${{ hashFiles('**/lockfiles') }}
+    - name: Set up Python
+      uses: actions/setup-python@v2
+    - name: Install PlatformIO
+      run: |
+        python -m pip install --upgrade pip
+        pip install --upgrade platformio
+    - name: Run PlatformIO
+      run: pio run -e uno -e micro -e mega2560_D -e f303k8
+    - uses: actions/upload-artifact@v2
+      with:
+        name: AR488.uno-${{github.sha}}
+        path: .pio/build/uno/firmware.*
+    - uses: actions/upload-artifact@v2
+      with:
+        name: AR488.micro-${{github.sha}}
+        path: .pio/build/micro/firmware.*
+    - uses: actions/upload-artifact@v2
+      with:
+        name: AR488.mega2560_D-${{github.sha}}
+        path: .pio/build/mega2560_D/firmware.*
+    - uses: actions/upload-artifact@v2
+      with:
+        name: AR488.f303k8-${{github.sha}}
+        path: .pio/build/f303k8/firmware.*
