@@ -23,7 +23,7 @@
 /*
  * Uncomment to use custom board layout
  */
-// #define AR488_CUSTOM
+//#define AR488_CUSTOM
 
 /*
  * Configure the appropriate board/layout section
@@ -37,12 +37,14 @@
    */
   /* Serial ports */
   #define AR_HW_SERIAL
+#ifndef AR_SERIAL_PORT
   #define AR_SERIAL_PORT Serial
   //#define AR_SERIAL_PORT Serial1
   //#define AR_SERIAL_PORT Serial2
   //#define AR_SERIAL_PORT Serial3
   //#define AR_CDC_SERIAL
   //#define AR_SW_SERIAL
+#endif
 
 /*** UNO and NANO boards ***/
 #elif __AVR_ATmega328P__
@@ -82,9 +84,11 @@
 /*** MEGA 2560 board ***/
 #elif __AVR_ATmega2560__
   /*** Board/layout selection ***/
+#if !defined(AR488_MEGA2560_D) && !defined(AR488_MEGA2560_E1) & !defined(AR488_MEGA2560_E2)
   #define AR488_MEGA2560_D
   //#define AR488_MEGA2560_E1
   //#define AR488_MEGA2560_E2
+#endif
   /*** Serial ports ***/
   // Mega 2560 supports Serial, Serial1, Serial2, Serial3. Since the pins
   // associated with Serial2 are used in the default pin layout, Serial2
@@ -93,9 +97,11 @@
   // and associated SERIALEVENT definition
 */
   #define AR_HW_SERIAL
+#ifndef AR_SERIAL_PORT
   #define AR_SERIAL_PORT Serial
   //#define AR_SERIAL_PORT Serial1
   //#define AR_SERIAL_PORT Serial3
+#endif
 
 #endif  // Board/layout selection
 
