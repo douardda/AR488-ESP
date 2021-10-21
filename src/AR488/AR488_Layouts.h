@@ -6,6 +6,7 @@
 #include "AR488_Config.h"
 
 /***** AR488_Hardware.h, ver. 0.49.08, 22/12/2020 *****/
+
 /*
  * Hardware pin layout definitions
  */
@@ -22,25 +23,26 @@
 //  #define USE_PINHOOKS
 #endif
 
-// TODO: proper pins for the nucleo f303k8
-#define DIO1  D0  /* GPIB 1  :  */
-#define DIO2  D1  /* GPIB 2  :  */
-#define DIO3  D2  /* GPIB 3  :  */
-#define DIO4  D3  /* GPIB 4  :  */
-#define DIO5  D4  /* GPIB 13 :  */
-#define DIO6  D5  /* GPIB 14 :  */
-#define DIO7  D6  /* GPIB 15 :  */
-#define DIO8  D7  /* GPIB 16 :  */
-
-#define IFC   D8  /* GPIB 9  :  */
-#define NDAC  D9  /* GPIB 8  :  */
-#define NRFD  D10  /* GPIB 7  :  */
-#define DAV   D11  /* GPIB 6  :  */
-#define EOI   D12  /* GPIB 5  :  */
-
-#define SRQ    D13  /* GPIB 10 :  */
-#define REN    A0  /* GPIB 17 :  */
-#define ATN    A1  /* GPIB 11 :  */
+// you can define pinhooks here, or you can use -D compilation flags (see in
+// platformio.ini if using platformio to build the project).
+//#define DIO1  D0  /* GPIB 1  :  */
+//#define DIO2  D1  /* GPIB 2  :  */
+//#define DIO3  D2  /* GPIB 3  :  */
+//#define DIO4  D3  /* GPIB 4  :  */
+//#define DIO5  D4  /* GPIB 13 :  */
+//#define DIO6  D5  /* GPIB 14 :  */
+//#define DIO7  D6  /* GPIB 15 :  */
+//#define DIO8  D7  /* GPIB 16 :  */
+//
+//#define IFC   D8  /* GPIB 9  :  */
+//#define NDAC  D9  /* GPIB 8  :  */
+//#define NRFD  D10  /* GPIB 7  :  */
+//#define DAV   D11  /* GPIB 6  :  */
+//#define EOI   D12  /* GPIB 5  :  */
+//
+//#define SRQ    D13  /* GPIB 10 :  */
+//#define REN    A0  /* GPIB 17 :  */
+//#define ATN    A1  /* GPIB 11 :  */
 
 #endif
 /***** ^^^^^^^^^^^^^^^^^^^^^^^^^ *****/
