@@ -1,5 +1,6 @@
 #include <Arduino.h>
 
+#include "AR488.h"
 #include "AR488_Config.h"
 #include "AR488_Layouts.h"
 
@@ -8,9 +9,7 @@
  * Hardware layout function definitions
  */
 
-volatile bool isATN = false;  // has ATN been asserted?
-volatile bool isSRQ = false;  // has SRQ been asserted?
-
+extern struct AR488state AR488st;
 
 /*********************************/
 /***** UNO/NANO BOARD LAYOUT *****/
@@ -116,12 +115,12 @@ ISR(PCINT2_vect) {
 
   // Has PCINT23 fired (ATN asserted)?
   if ((PIND ^ atnPinMem) & ATNint) {
-    isATN = (ATNPREG & ATNint) == 0;
+    AR488st.isATN = (ATNPREG & ATNint) == 0;
   }
 
   // Has PCINT19 fired (SRQ asserted)?
   if ((PIND ^ srqPinMem) & SRQint) {
-    isSRQ = (SRQPREG & SRQint) == 0;
+    AR488st.isSRQ = (SRQPREG & SRQint) == 0;
   }
 
   // Save current state of PORTD register
@@ -261,12 +260,12 @@ ISR(PCINT0_vect) {
 
   // Has PCINT5 fired (ATN asserted)?
   if ((ATNPREG ^ atnPinMem) & ATNint) {
-    isATN = (ATNPREG & ATNint) == 0;
+    AR488st.isATN = (ATNPREG & ATNint) == 0;
   }
 
   // Has PCINT4 fired (SRQ asserted)?
   if ((SRQPREG ^ srqPinMem) & SRQint) {
-    isSRQ = (SRQPREG & SRQint) == 0;
+    AR488st.isSRQ = (SRQPREG & SRQint) == 0;
   }
 
   // Save current state of PORTD register
@@ -432,12 +431,12 @@ ISR(PCINT0_vect) {
 
   // Has PCINT1 fired (ATN asserted)?
   if ((ATNPREG ^ atnPinMem) & ATNint) {
-    isATN = (ATNPREG & ATNint) == 0;
+    AR488st.isATN = (ATNPREG & ATNint) == 0;
   }
 
   // Has PCINT3 fired (SRQ asserted)?
   if ((SRQPREG ^ srqPinMem) & SRQint) {
-    isSRQ = (SRQPREG & SRQint) == 0;
+    AR488st.isSRQ = (SRQPREG & SRQint) == 0;
   }
 
   // Save current state of PORTD register
@@ -597,12 +596,12 @@ ISR(PCINT0_vect) {
 
   // Has PCINT0 fired (ATN asserted)?
   if ((ATNPREG ^ atnPinMem) & ATNint) {
-    isATN = (ATNPREG & ATNint) == 0;
+    AR488st.isATN = (ATNPREG & ATNint) == 0;
   }
 
   // Has PCINT2 fired (SRQ asserted)?
   if ((SRQPREG ^ srqPinMem) & SRQint) {
-    isSRQ = (SRQPREG & SRQint) == 0;
+    AR488st.isSRQ = (SRQPREG & SRQint) == 0;
   }
 
   // Save current state of PORTD register
@@ -774,13 +773,13 @@ void pin_change_interrupt(void) {
   // Has the status of the ATN pin interrupt changed?
   if ((ATNPREG ^ atnPinMem) & ATNint) {
     // Set the current status of ATN
-    isATN = (ATNPREG & ATNint) == 0;
+    AR488st.isATN = (ATNPREG & ATNint) == 0;
   }
 
   // Has the status of the SRQ pin interrupt changed?
   if ((SRQPREG ^ srqPinMem) & SRQint) {
     // Set the current status of SRQ
-    isSRQ = (SRQPREG & SRQint) == 0;
+    AR488st.isSRQ = (SRQPREG & SRQint) == 0;
   }
 
   // Save current state of the interrupt registers
@@ -918,11 +917,11 @@ uint8_t reverseBits(uint8_t dbyte) {
 //static const uint8_t SRQint = 0b00000100;
 
 void atnISR() {
-  isATN = (digitalRead(ATN) ? false : true);
+  AR488st.isATN = (digitalRead(ATN) ? false : true);
 }
 
 void srqISR() {
-  isSRQ = (digitalRead(SRQ) ? false : true);
+  AR488st.isSRQ = (digitalRead(SRQ) ? false : true);
 }
 
 void interruptsEn(){
@@ -1008,11 +1007,11 @@ void setGpibState(uint8_t bits, uint8_t mask, uint8_t mode) {
 #ifdef USE_INTERRUPTS
 
 void atnISR() {
-  isATN = (digitalRead(ATN) ? false : true);
+  AR488st.isATN = (digitalRead(ATN) ? false : true);
 }
 
 void srqISR() {
-  isSRQ = (digitalRead(SRQ) ? false : true);
+  AR488st.isSRQ = (digitalRead(SRQ) ? false : true);
 }
 
 void interruptsEn(){
