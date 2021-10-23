@@ -316,8 +316,6 @@ M3\n\
 /***** MISCELLANEOUS DECLARATIONS *****/
 /******vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv******/
 
-#define AR_CFG_SIZE 84
-
 /******^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^******/
 /***** MISCELLANEOUS DECLARATIONS *****/
 /*********************************************/

@@ -2,7 +2,6 @@
 #define AR488_H
 
 #include <Arduino.h>
-#include "commands.h"
 #include "AR488_Config.h"
 
 #ifdef E2END
@@ -71,32 +70,32 @@
 /*
  * Default values set for controller mode
  */
-union AR488conf{
-  struct{
-    bool eot_en;      // Enable/disable append EOT char to string received from GPIB bus before sending to USB
-    bool eoi;         // Assert EOI on last data char written to GPIB - 0-disable, 1-enable
-    uint8_t cmode;    // Controller/device mode (0=unset, 1=device, 2=controller)
-    uint8_t caddr;    // Controller address
-    uint8_t paddr;    // Primary device address
-    uint8_t saddr;    // Secondary device address
-    uint8_t eos;      // EOS (end of send to GPIB) characters [0=CRLF, 1=CR, 2=LF, 3=None]
-    uint8_t stat;     // Status byte to return in response to a serial poll
-    uint8_t amode;    // Auto mode setting (0=off; 1=Prologix; 2=onquery; 3=continuous);
-    int rtmo;         // Read timout (read_tmo_ms) in milliseconds - 0-3000 - value depends on instrument
-    char eot_ch;      // EOT character to append to USB output when EOI signal detected
-    char vstr[48];    // Custom version string
-    uint16_t tmbus;   // Delay to allow the bus control/data lines to settle (1-30,000 microseconds)
-    uint8_t eor;      // EOR (end of receive from GPIB instrument) characters [0=CRLF, 1=CR, 2=LF, 3=None, 4=LFCR, 5=ETX, 6=CRLF+ETX, 7=SPACE]
-    char sname[16];   // Interface short name
-    uint32_t serial;  // Serial number
-    uint8_t idn;      // Send ID in response to *idn? 0=disable, 1=send name; 2=send name+serial
-  };
-  uint8_t db[AR_CFG_SIZE];
-};
+typedef struct {
+  bool eot_en;      // Enable/disable append EOT char to string received from GPIB bus before sending to USB
+  bool eoi;         // Assert EOI on last data char written to GPIB - 0-disable, 1-enable
+  uint8_t cmode;    // Controller/device mode (0=unset, 1=device, 2=controller)
+  uint8_t caddr;    // Controller address
+  uint8_t paddr;    // Primary device address
+  uint8_t saddr;    // Secondary device address
+  uint8_t eos;      // EOS (end of send to GPIB) characters [0=CRLF, 1=CR, 2=LF, 3=None]
+  uint8_t stat;     // Status byte to return in response to a serial poll
+  uint8_t amode;    // Auto mode setting (0=off; 1=Prologix; 2=onquery; 3=continuous);
+  int rtmo;         // Read timout (read_tmo_ms) in milliseconds - 0-3000 - value depends on instrument
+  char eot_ch;      // EOT character to append to USB output when EOI signal detected
+  char vstr[48];    // Custom version string
+  uint16_t tmbus;   // Delay to allow the bus control/data lines to settle (1-30,000 microseconds)
+  uint8_t eor;      // EOR (end of receive from GPIB instrument) characters [0=CRLF, 1=CR, 2=LF, 3=None, 4=LFCR, 5=ETX, 6=CRLF+ETX, 7=SPACE]
+  char sname[16];   // Interface short name
+  uint32_t serial;  // Serial number
+  uint8_t idn;      // Send ID in response to *idn? 0=disable, 1=send name; 2=send name+serial
+  bool isVerb;      // Verbose mode
+} AR488Conf;
 
-struct AR488state{
+#define AR_CFG_SIZE 96  // ie. sizeof(AR488Conf) XXX recompute this
+
+
+typedef struct {
   uint8_t cstate = 0; // GPIB control state
-  bool isVerb = false; // Verbose mode
   uint8_t lnRdy = 0; // CR/LF terminated line ready to process
   // GPIB data receive flags
   //bool isReading = false; // Is a GPIB read in progress?
@@ -132,55 +131,14 @@ struct AR488state{
   uint8_t runMacro = 0;
   // Send response to *idn?
   bool sendIdn = false;
-};
+} AR488State;
 
-void initDevice();
 void setup();
 void loop();
 void initAR488();
-void initController();
-uint8_t serialIn_h();
-bool isAtnAsserted();
-void errBadCmd();
-uint8_t parseInput(char c);
-bool isCmd(char *buffr);
-bool isIdnQuery(char *buffr);
-bool isRead(char *buffr);
-void addPbuf(char c);
-void flushPbuf();
-void showPrompt();
-void sendToInstrument(char *buffr, uint8_t dsize);
-void execCmd(char *buffr, uint8_t dsize);
-void getCmd(char *buffr);
 void printHex(char *buffr, int dsize);
-bool notInRange(char *param, uint16_t lowl, uint16_t higl, uint16_t &rval);
 #ifdef USE_MACROS
 void execMacro(uint8_t idx);
 #endif
-void attnRequired();
-void mla_h();
-void mta_h();
-void sdc_h();
-void spd_h();
-void spe_h();
-void unl_h();
-void unt_h();
-void setSrqSig();
-void clrSrqSig();
-void lonMode();
-bool gpibSendCmd(uint8_t cmdByte);
-void gpibSendStatus();
-void gpibSendData(char *data, uint8_t dsize);
-bool gpibReceiveData();
-bool isTerminatorDetected(uint8_t bytes[3], uint8_t eor_sequence);
-uint8_t gpibReadByte(uint8_t *db, bool *eoi);
-bool gpibWriteByte(uint8_t db);
-bool gpibWriteByteHandshake(uint8_t db);
-bool addrDev(uint8_t addr, bool dir);
-bool uaddrDev();
-
-bool Wait_on_pin_state(uint8_t state, uint8_t pin, int interval);
-void setGpibControls(uint8_t state);
-
 
 #endif

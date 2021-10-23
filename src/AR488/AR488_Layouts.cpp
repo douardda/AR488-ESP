@@ -9,7 +9,7 @@
  * Hardware layout function definitions
  */
 
-extern struct AR488state AR488st;
+extern AR488State AR488st;
 
 /*********************************/
 /***** UNO/NANO BOARD LAYOUT *****/
