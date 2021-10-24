@@ -165,11 +165,11 @@
  * the read and write modes of the ICs.
  */
 //#define SN7516X
-#ifdef SN7516X
-  #define SN7516X_TE 7
+//#ifdef SN7516X
+//  #define SN7516X_TE 7
 //  #define SN7516X_DC 13
 //  #define SN7516X_SC 12
-#endif
+//#endif
 
 
 /***** Bluetooth (HC05) support *****/
