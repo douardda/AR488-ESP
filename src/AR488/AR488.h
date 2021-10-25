@@ -96,8 +96,6 @@ typedef struct {
 
 typedef struct {
   // State flags set by interrupt being triggered
-  volatile bool isATN = false;  // has ATN been asserted?
-  volatile bool isSRQ = false;  // has SRQ been asserted?
   // Interrupt without handler fired
   //volatile bool isBAD = false;
 } AR488State;

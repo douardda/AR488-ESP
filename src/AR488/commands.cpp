@@ -709,11 +709,7 @@ void spoll_h(char *params, AR488Conf& AR488, AR488State& AR488st) {
   // Set SRQ to status of SRQ line. Should now be unasserted but, if it is
   // still asserted, then another device may be requesting service so another
   // serial poll will be called from the main loop
-  if (digitalRead(SRQ) == LOW) {
-    AR488st.isSRQ = true;
-  } else {
-    AR488st.isSRQ = false;
-  }
+  gpib.setSRQ(digitalRead(SRQ) == LOW);
   if (AR488.isVerb) arSerial->println(F("Serial poll completed."));
 
 }

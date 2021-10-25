@@ -43,6 +43,12 @@ public:
   void unt_h();
   void lonMode();
 
+  bool isATN() {return ATNasserted;}
+  bool isSRQ() {return SRQasserted;}
+  void clearATN() {ATNasserted = false;}
+  void clearSRQ() {SRQasserted = false;}
+  void setATN(bool atn) {ATNasserted = atn;}
+  void setSRQ(bool srq) {SRQasserted = srq;}
 
 private:
   Stream &outstream;
@@ -58,11 +64,15 @@ private:
   bool aTt = false;       // currently unused
   bool aTl = false;       // currently unused
 
+  bool ATNasserted = false;  // has ATN been asserted?
+  bool SRQasserted = false;  // has SRQ been asserted?
+
 public:  // TODO: fix this
   bool rEoi = false;      // Read eoi requested
   bool rEbt = false;      // Read with specified terminator character
   uint8_t eByte = 0;      // Termination character
   bool isQuery = false;   // Direct instrument command is a query
+
 
 };
 

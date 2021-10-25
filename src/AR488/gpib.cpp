@@ -925,13 +925,11 @@ void GPIB::lonMode(){
  * state of the ATN line needs to be checked.
  */
 bool GPIB::isAtnAsserted() {
-#ifdef USE_INTERRUPTS
-  if (AR488st.isATN) return true;
-#else
-  // ATN is LOW when asserted
-  if (digitalRead(ATN) == LOW) return true;
+#ifndef USE_INTERRUPTS
+  // no interrupt, so check the current value
+  setATN(digitalRead(ATN) == LOW);
 #endif
-  return false;
+  return isATN();
 }
 
 

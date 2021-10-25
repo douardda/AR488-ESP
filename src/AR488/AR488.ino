@@ -313,8 +313,8 @@ void setup() {
   // Initialize the interface in controller mode
   if (AR488.cmode == 2) gpib.initController();
 
-  AR488st.isATN = false;
-  AR488st.isSRQ = false;
+  gpib.clearATN();
+  gpib.clearSRQ();
 
 #if defined(USE_MACROS) && defined(RUN_STARTUP)
   // Run startup macro
@@ -351,8 +351,8 @@ void loop() {
  * been signalled
  */
 #ifndef USE_INTERRUPTS
-  AR488st.isATN = (digitalRead(ATN)==LOW ? true : false);
-  AR488st.isSRQ = (digitalRead(SRQ)==LOW ? true : false);
+  gpib.setATN(digitalRead(ATN)==LOW ? true : false);
+  gpib.setSRQ(digitalRead(SRQ)==LOW ? true : false);
 #endif
 
 /*** Process the buffer ***/
@@ -390,9 +390,9 @@ void loop() {
     }
 
     // Check status of SRQ and SPOLL if asserted
-    if (AR488st.isSRQ && comm.isSrqa) {
+    if (gpib.isSRQ() && comm.isSrqa) {
 			spoll_h(NULL, AR488, AR488st);
-      AR488st.isSRQ = false;
+      gpib.clearSRQ();
     }
 
     // Continuous auto-receive data from GPIB bus
@@ -406,7 +406,7 @@ void loop() {
     }else if (comm.isRO) {
       gpib.lonMode();
     }else{
-      if (AR488st.isATN) gpib.attnRequired();
+			if (gpib.isATN()) gpib.attnRequired();
       if (comm.lnRdy == 2) gpib.sendToInstrument(comm.pBuf, comm.pbPtr);
     }
   }
