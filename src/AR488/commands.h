@@ -14,8 +14,8 @@ struct cmdRec {
 void getCmd(char *buffr, Controller& controller);
 void execCmd(char *buffr, uint8_t dsize, Controller& controller);
 
-bool notInRange(char *param, uint16_t lowl, uint16_t higl, uint16_t &rval, bool verbose);
-void errBadCmd();
+bool notInRange(char *param, uint16_t lowl, uint16_t higl, uint16_t &rval, Controller &controller);
+void errBadCmd(Controller& controller);
 
 void setSrqSig();
 void clrSrqSig();

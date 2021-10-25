@@ -75,7 +75,6 @@
 
 
 Controller::Controller(Stream& stream):
-		verbose(false),
 		stream(stream)
 {
 	initConfig();

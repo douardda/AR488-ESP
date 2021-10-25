@@ -4,7 +4,6 @@
 #include "gpib.h"
 #include "controller.h"
 
-extern Stream *arSerial;
 extern GPIB gpib;
 
 
@@ -146,13 +145,13 @@ void getCmd(char *buffr, Controller& controller) {
 		cmdHidx[i].handler(NULL, controller);
       }
     }else{
-      errBadCmd();
-      if (controller.config.isVerb) arSerial->println(F("Command not available in this mode."));
+      errBadCmd(controller);
+      if (controller.config.isVerb) controller.stream.println(F("Command not available in this mode."));
     }
 
   } else {
     // No valid command found
-    errBadCmd();
+    errBadCmd(controller);
   }
 
 }
@@ -170,16 +169,16 @@ void addr_h(char *params, Controller& controller) {
 
     // Primary address
     param = strtok(params, " \t");
-    if (notInRange(param, 1, 30, val, controller.config.isVerb)) return;
+    if (notInRange(param, 1, 30, val, controller)) return;
     if (val == controller.config.caddr) {
-      errBadCmd();
-      if (controller.config.isVerb) arSerial->println(F("That is my address! Address of a remote device is required."));
+      errBadCmd(controller);
+      if (controller.config.isVerb) controller.stream.println(F("That is my address! Address of a remote device is required."));
       return;
     }
     controller.config.paddr = val;
     if (controller.config.isVerb) {
-      arSerial->print(F("Set device primary address to: "));
-      arSerial->println(val);
+      controller.stream.print(F("Set device primary address to: "));
+      controller.stream.println(val);
     }
 
     // Secondary address
@@ -187,21 +186,21 @@ void addr_h(char *params, Controller& controller) {
     val = 0;
     param = strtok(NULL, " \t");
     if (param != NULL) {
-      if (notInRange(param, 96, 126, val, controller.config.isVerb)) return;
+      if (notInRange(param, 96, 126, val, controller)) return;
       controller.config.saddr = val;
       if (controller.config.isVerb) {
-        arSerial->print("Set device secondary address to: ");
-        arSerial->println(val);
+        controller.stream.print("Set device secondary address to: ");
+        controller.stream.println(val);
       }
     }
 
   } else {
-    arSerial->print(controller.config.paddr);
+    controller.stream.print(controller.config.paddr);
     if (controller.config.saddr > 0) {
-      arSerial->print(F(" "));
-      arSerial->print(controller.config.saddr);
+      controller.stream.print(F(" "));
+      controller.stream.print(controller.config.saddr);
     }
-    arSerial->println();
+    controller.stream.println();
   }
 }
 
@@ -210,15 +209,15 @@ void addr_h(char *params, Controller& controller) {
 void rtmo_h(char *params, Controller& controller) {
   uint16_t val;
   if (params != NULL) {
-    if (notInRange(params, 1, 32000, val, controller.config.isVerb)) return;
+    if (notInRange(params, 1, 32000, val, controller)) return;
     controller.config.rtmo = val;
     if (controller.config.isVerb) {
-      arSerial->print(F("Set [read_tmo_ms] to: "));
-      arSerial->print(val);
-      arSerial->println(F(" milliseconds"));
+      controller.stream.print(F("Set [read_tmo_ms] to: "));
+      controller.stream.print(val);
+      controller.stream.println(F(" milliseconds"));
     }
   } else {
-    arSerial->println(controller.config.rtmo);
+    controller.stream.println(controller.config.rtmo);
   }
 }
 
@@ -227,14 +226,14 @@ void rtmo_h(char *params, Controller& controller) {
 void eos_h(char *params, Controller& controller) {
   uint16_t val;
   if (params != NULL) {
-    if (notInRange(params, 0, 3, val, controller.config.isVerb)) return;
+    if (notInRange(params, 0, 3, val, controller)) return;
     controller.config.eos = (uint8_t)val;
     if (controller.config.isVerb) {
-      arSerial->print(F("Set EOS to: "));
-      arSerial->println(val);
+      controller.stream.print(F("Set EOS to: "));
+      controller.stream.println(val);
     };
   } else {
-    arSerial->println(controller.config.eos);
+    controller.stream.println(controller.config.eos);
   }
 }
 
@@ -243,14 +242,14 @@ void eos_h(char *params, Controller& controller) {
 void eoi_h(char *params, Controller& controller) {
   uint16_t val;
   if (params != NULL) {
-    if (notInRange(params, 0, 1, val, controller.config.isVerb)) return;
+    if (notInRange(params, 0, 1, val, controller)) return;
     controller.config.eoi = val ? true : false;
     if (controller.config.isVerb) {
-      arSerial->print(F("Set EOI assertion: "));
-      arSerial->println(val ? "ON" : "OFF");
+      controller.stream.print(F("Set EOI assertion: "));
+      controller.stream.println(val ? "ON" : "OFF");
     };
   } else {
-    arSerial->println(controller.config.eoi);
+    controller.stream.println(controller.config.eoi);
   }
 }
 
@@ -259,7 +258,7 @@ void eoi_h(char *params, Controller& controller) {
 void cmode_h(char *params, Controller& controller) {
   uint16_t val;
   if (params != NULL) {
-    if (notInRange(params, 0, 1, val, controller.config.isVerb)) return;
+    if (notInRange(params, 0, 1, val, controller)) return;
     switch (val) {
       case 0:
         controller.config.cmode = 1;
@@ -271,11 +270,11 @@ void cmode_h(char *params, Controller& controller) {
         break;
     }
     if (controller.config.isVerb) {
-      arSerial->print(F("Interface mode set to: "));
-      arSerial->println(val ? "CONTROLLER" : "DEVICE");
+      controller.stream.print(F("Interface mode set to: "));
+      controller.stream.println(val ? "CONTROLLER" : "DEVICE");
     }
   } else {
-    arSerial->println(controller.config.cmode - 1);
+    controller.stream.println(controller.config.cmode - 1);
   }
 }
 
@@ -284,14 +283,14 @@ void cmode_h(char *params, Controller& controller) {
 void eot_en_h(char *params, Controller& controller) {
   uint16_t val;
   if (params != NULL) {
-    if (notInRange(params, 0, 1, val, controller.config.isVerb)) return;
+    if (notInRange(params, 0, 1, val, controller)) return;
     controller.config.eot_en = val ? true : false;
     if (controller.config.isVerb) {
-      arSerial->print(F("Appending of EOT character: "));
-      arSerial->println(val ? "ON" : "OFF");
+      controller.stream.print(F("Appending of EOT character: "));
+      controller.stream.println(val ? "ON" : "OFF");
     }
   } else {
-    arSerial->println(controller.config.eot_en);
+    controller.stream.println(controller.config.eot_en);
   }
 }
 
@@ -300,14 +299,14 @@ void eot_en_h(char *params, Controller& controller) {
 void eot_char_h(char *params, Controller& controller) {
   uint16_t val;
   if (params != NULL) {
-    if (notInRange(params, 0, 255, val, controller.config.isVerb)) return;
+    if (notInRange(params, 0, 255, val, controller)) return;
     controller.config.eot_ch = (uint8_t)val;
     if (controller.config.isVerb) {
-      arSerial->print(F("EOT set to ASCII character: "));
-      arSerial->println(val);
+      controller.stream.print(F("EOT set to ASCII character: "));
+      controller.stream.println(val);
     };
   } else {
-    arSerial->println(controller.config.eot_ch, DEC);
+    controller.stream.println(controller.config.eot_ch, DEC);
   }
 }
 
@@ -316,19 +315,19 @@ void eot_char_h(char *params, Controller& controller) {
 void amode_h(char *params, Controller& controller) {
   uint16_t val;
   if (params != NULL) {
-    if (notInRange(params, 0, 3, val, controller.config.isVerb)) return;
+    if (notInRange(params, 0, 3, val, controller)) return;
     if (val > 0 && controller.config.isVerb) {
-      arSerial->println(F("WARNING: automode ON can cause some devices to generate"));
-      arSerial->println(F("         'addressed to talk but nothing to say' errors"));
+      controller.stream.println(F("WARNING: automode ON can cause some devices to generate"));
+      controller.stream.println(F("         'addressed to talk but nothing to say' errors"));
     }
     controller.config.amode = (uint8_t)val;
     if (controller.config.amode < 3) controller.aRead = false;
     if (controller.config.isVerb) {
-      arSerial->print(F("Auto mode: "));
-      arSerial->println(controller.config.amode);
+      controller.stream.print(F("Auto mode: "));
+      controller.stream.println(controller.config.amode);
     }
   } else {
-    arSerial->println(controller.config.amode);
+    controller.stream.println(controller.config.amode);
   }
 }
 
@@ -337,13 +336,13 @@ void amode_h(char *params, Controller& controller) {
 void ver_h(char *params, Controller& controller) {
   // If "real" requested
   if (params != NULL && strncmp(params, "real", 3) == 0) {
-    arSerial->println(F(FWVER));
+    controller.stream.println(F(FWVER));
     // Otherwise depends on whether we have a custom string set
   } else {
     if (strlen(controller.config.vstr) > 0) {
-      arSerial->println(controller.config.vstr);
+      controller.stream.println(controller.config.vstr);
     } else {
-      arSerial->println(F(FWVER));
+      controller.stream.println(F(FWVER));
     }
   }
 }
@@ -357,7 +356,7 @@ void read_h(char *params, Controller& controller) {
   // Read any parameters
   if (params != NULL) {
     if (strlen(params) > 3) {
-      if (controller.config.isVerb) arSerial->println(F("Invalid termination character - ignored!"));
+      if (controller.config.isVerb) controller.stream.println(F("Invalid termination character - ignored!"));
     } else if (strncmp(params, "eoi", 3) == 0) { // Read with eoi detection
       gpib.rEoi = true;
     } else { // Assume ASCII character given and convert to an 8 bit byte
@@ -378,15 +377,15 @@ void read_h(char *params, Controller& controller) {
 /***** Send device clear (usually resets the device to power on state) *****/
 void clr_h(char *params, Controller& controller) {
   if (gpib.addrDev(controller.config.paddr, 0)) {
-    if (controller.config.isVerb) arSerial->println(F("Failed to address device"));
+    if (controller.config.isVerb) controller.stream.println(F("Failed to address device"));
     return;
   }
   if (gpib.gpibSendCmd(GC_SDC))  {
-    if (controller.config.isVerb) arSerial->println(F("Failed to send SDC"));
+    if (controller.config.isVerb) controller.stream.println(F("Failed to send SDC"));
     return;
   }
   if (gpib.uaddrDev()) {
-    if (controller.config.isVerb) arSerial->println(F("Failed to untalk GPIB bus"));
+    if (controller.config.isVerb) controller.stream.println(F("Failed to untalk GPIB bus"));
     return;
   }
   // Set GPIB controls back to idle state
@@ -402,23 +401,23 @@ void llo_h(char *params, Controller& controller) {
     if (params != NULL) {
       if (0 == strncmp(params, "all", 3)) {
         if (gpib.gpibSendCmd(GC_LLO)) {
-          if (controller.config.isVerb) arSerial->println(F("Failed to send universal LLO."));
+          if (controller.config.isVerb) controller.stream.println(F("Failed to send universal LLO."));
         }
       }
     } else {
       // Address current device
       if (gpib.addrDev(controller.config.paddr, 0)) {
-        if (controller.config.isVerb) arSerial->println(F("Failed to address the device."));
+        if (controller.config.isVerb) controller.stream.println(F("Failed to address the device."));
         return;
       }
       // Send LLO to currently addressed device
       if (gpib.gpibSendCmd(GC_LLO)) {
-        if (controller.config.isVerb) arSerial->println(F("Failed to send LLO to device"));
+        if (controller.config.isVerb) controller.stream.println(F("Failed to send LLO to device"));
         return;
       }
       // Unlisten bus
       if (gpib.uaddrDev()) {
-        if (controller.config.isVerb) arSerial->println(F("Failed to unlisten the GPIB bus"));
+        if (controller.config.isVerb) controller.stream.println(F("Failed to unlisten the GPIB bus"));
         return;
       }
     }
@@ -446,17 +445,17 @@ void loc_h(char *params, Controller& controller) {
     } else {
       // Address device to listen
       if (gpib.addrDev(controller.config.paddr, 0)) {
-        if (controller.config.isVerb) arSerial->println(F("Failed to address device."));
+        if (controller.config.isVerb) controller.stream.println(F("Failed to address device."));
         return;
       }
       // Send GTL
       if (gpib.gpibSendCmd(GC_GTL)) {
-        if (controller.config.isVerb) arSerial->println(F("Failed sending LOC."));
+        if (controller.config.isVerb) controller.stream.println(F("Failed sending LOC."));
         return;
       }
       // Unlisten bus
       if (gpib.uaddrDev()) {
-        if (controller.config.isVerb) arSerial->println(F("Failed to unlisten GPIB bus."));
+        if (controller.config.isVerb) controller.stream.println(F("Failed to unlisten GPIB bus."));
         return;
       }
       // Set GPIB controls back to idle state
@@ -501,7 +500,7 @@ void trg_h(char *params, Controller& controller) {
       } else {
         param = strtok(NULL, " \t");
       }
-      if (notInRange(param, 1, 30, val, controller.config.isVerb)) return;
+      if (notInRange(param, 1, 30, val, controller)) return;
       addrs[cnt] = (uint8_t)val;
       cnt++;
     }
@@ -512,17 +511,17 @@ void trg_h(char *params, Controller& controller) {
     for (int i = 0; i < cnt; i++) {
       // Address the device
       if (gpib.addrDev(addrs[i], 0)) {
-        if (controller.config.isVerb) arSerial->println(F("Failed to address device"));
+        if (controller.config.isVerb) controller.stream.println(F("Failed to address device"));
         return;
       }
       // Send GTL
       if (gpib.gpibSendCmd(GC_GET))  {
-        if (controller.config.isVerb) arSerial->println(F("Failed to trigger device"));
+        if (controller.config.isVerb) controller.stream.println(F("Failed to trigger device"));
         return;
       }
       // Unaddress device
       if (gpib.uaddrDev()) {
-        if (controller.config.isVerb) arSerial->println(F("Failed to unlisten GPIB bus"));
+        if (controller.config.isVerb) controller.stream.println(F("Failed to unlisten GPIB bus"));
         return;
       }
     }
@@ -530,7 +529,7 @@ void trg_h(char *params, Controller& controller) {
     // Set GPIB controls back to idle state
     gpib.setGpibControls(CIDS);
 
-    if (controller.config.isVerb) arSerial->println(F("Group trigger completed."));
+    if (controller.config.isVerb) controller.stream.println(F("Group trigger completed."));
   }
 }
 
@@ -582,16 +581,16 @@ void spoll_h(char *params, Controller& controller) {
       if (strncmp(param, "all", 3) == 0) {
         all = true;
         j = 30;
-        if (controller.config.isVerb) arSerial->println(F("Serial poll of all devices requested..."));
+        if (controller.config.isVerb) controller.stream.println(F("Serial poll of all devices requested..."));
         break;
         // Read all address parameters
       } else if (strlen(params) < 3) { // No more than 2 characters
-        if (notInRange(param, 1, 30, val, controller.config.isVerb)) return;
+        if (notInRange(param, 1, 30, val, controller)) return;
         addrs[j] = (uint8_t)val;
         j++;
       } else {
-        errBadCmd();
-        if (controller.config.isVerb) arSerial->println(F("Invalid parameter"));
+        errBadCmd(controller);
+        if (controller.config.isVerb) controller.stream.println(F("Invalid parameter"));
         return;
       }
     }
@@ -655,26 +654,26 @@ void spoll_h(char *params, Controller& controller) {
           // If all, return specially formatted response: SRQ:addr,status
           // but only when RQS bit set
           if (sb & 0x40) {
-            arSerial->print(F("SRQ:")); arSerial->print(i); arSerial->print(F(",")); arSerial->println(sb, DEC);
+            controller.stream.print(F("SRQ:")); controller.stream.print(i); controller.stream.print(F(",")); controller.stream.println(sb, DEC);
             i = j;
           }
         } else {
           // Return decimal number representing status byte
-          arSerial->println(sb, DEC);
+          controller.stream.println(sb, DEC);
           if (controller.config.isVerb) {
-            arSerial->print(F("Received status byte ["));
-            arSerial->print(sb);
-            arSerial->print(F("] from device at address: "));
-            arSerial->println(val);
+            controller.stream.print(F("Received status byte ["));
+            controller.stream.print(sb);
+            controller.stream.print(F("] from device at address: "));
+            controller.stream.println(val);
           }
           i = j;
         }
       } else {
-        if (controller.config.isVerb) arSerial->println(F("Failed to retrieve status byte"));
+        if (controller.config.isVerb) controller.stream.println(F("Failed to retrieve status byte"));
       }
     }
   }
-  if (all) arSerial->println();
+  if (all) controller.stream.println();
 
   // Send Serial Poll Disable [SPD] to all devices
   if ( gpib.gpibSendCmd(GC_SPD) )  {
@@ -707,7 +706,7 @@ void spoll_h(char *params, Controller& controller) {
   // still asserted, then another device may be requesting service so another
   // serial poll will be called from the main loop
   gpib.setSRQ(digitalRead(SRQ) == LOW);
-  if (controller.config.isVerb) arSerial->println(F("Serial poll completed."));
+  if (controller.config.isVerb) controller.stream.println(F("Serial poll completed."));
 
 }
 
@@ -715,7 +714,7 @@ void spoll_h(char *params, Controller& controller) {
 /***** Return status of SRQ line *****/
 void srq_h(char *params, Controller& controller) {
   //NOTE: LOW=asserted, HIGH=unasserted
-  arSerial->println(!digitalRead(SRQ));
+  controller.stream.println(!digitalRead(SRQ));
 }
 
 
@@ -725,18 +724,18 @@ void stat_h(char *params, Controller& controller) {
   // A parameter given?
   if (params != NULL) {
     // Byte value given?
-    if (notInRange(params, 0, 255, val, controller.config.isVerb)) return;
+    if (notInRange(params, 0, 255, val, controller)) return;
     controller.config.stat = (uint8_t)val;
     if (val & 0x40) {
       setSrqSig();
-      if (controller.config.isVerb) arSerial->println(F("SRQ asserted."));
+      if (controller.config.isVerb) controller.stream.println(F("SRQ asserted."));
     } else {
       clrSrqSig();
-      if (controller.config.isVerb) arSerial->println(F("SRQ un-asserted."));
+      if (controller.config.isVerb) controller.stream.println(F("SRQ un-asserted."));
     }
   } else {
     // Return the currently set status byte
-    arSerial->println(controller.config.stat);
+    controller.stream.println(controller.config.stat);
   }
 }
 
@@ -746,9 +745,9 @@ void save_h(char *params, Controller& controller) {
 #ifdef E2END
   uint8_t *conf = (uint8_t*) &(controller.config);
   epWriteData(conf, AR_CFG_SIZE);
-  if (controller.config.isVerb) arSerial->println(F("Settings saved."));
+  if (controller.config.isVerb) controller.stream.println(F("Settings saved."));
 #else
-  arSerial->println(F("EEPROM not supported."));
+  controller.stream.println(F("EEPROM not supported."));
 #endif
 }
 
@@ -757,15 +756,15 @@ void save_h(char *params, Controller& controller) {
 void lon_h(char *params, Controller& controller) {
   uint16_t val;
   if (params != NULL) {
-    if (notInRange(params, 0, 1, val, controller.config.isVerb)) return;
+    if (notInRange(params, 0, 1, val, controller)) return;
     controller.isRO = val ? true : false;
     if (controller.isTO) controller.isTO = false; // Talk-only mode must be disabled!
     if (controller.config.isVerb) {
-      arSerial->print(F("LON: "));
-      arSerial->println(val ? "ON" : "OFF") ;
+      controller.stream.print(F("LON: "));
+      controller.stream.println(val ? "ON" : "OFF") ;
     }
   } else {
-    arSerial->println(controller.isRO);
+    controller.stream.println(controller.isRO);
   }
 }
 
@@ -807,7 +806,7 @@ void aspoll_h(char *params, Controller& controller) {
  */
 void dcl_h(char *params, Controller& controller) {
   if ( gpib.gpibSendCmd(GC_DCL) )  {
-    if (controller.config.isVerb) arSerial->println(F("Sending DCL failed"));
+    if (controller.config.isVerb) controller.stream.println(F("Sending DCL failed"));
     return;
   }
   // Set GPIB controls back to idle state
@@ -825,15 +824,15 @@ void default_h(char *params, Controller& controller) {
 void eor_h(char *params, Controller& controller) {
   uint16_t val;
   if (params != NULL) {
-    if (notInRange(params, 0, 15, val, controller.config.isVerb)) return;
+    if (notInRange(params, 0, 15, val, controller)) return;
     controller.config.eor = (uint8_t)val;
     if (controller.config.isVerb) {
-      arSerial->print(F("Set EOR to: "));
-      arSerial->println(val);
+      controller.stream.print(F("Set EOR to: "));
+      controller.stream.println(val);
     };
   } else {
     if (controller.config.eor>7) controller.config.eor = 0;  // Needed to reset FF read from EEPROM after FW upgrade
-    arSerial->println(controller.config.eor);
+    controller.stream.println(controller.config.eor);
   }
 }
 
@@ -859,9 +858,9 @@ void ppoll_h(char *params, Controller& controller) {
   gpib.setGpibControls(CIDS);
 
   // Output the response byte
-  arSerial->println(sb, DEC);
+  controller.stream.println(sb, DEC);
 
-  if (controller.config.isVerb) arSerial->println(F("Parallel poll completed."));
+  if (controller.config.isVerb) controller.stream.println(F("Parallel poll completed."));
 }
 
 
@@ -869,19 +868,19 @@ void ppoll_h(char *params, Controller& controller) {
 void ren_h(char *params, Controller& controller) {
 #if defined (SN7516X) && not defined (SN7516X_DC)
   params = params;
-  arSerial->println(F("Unavailable")) ;
+  controller.stream.println(F("Unavailable")) ;
 #else
   // char *stat;
   uint16_t val;
   if (params != NULL) {
-    if (notInRange(params, 0, 1, val, controller.config.isVerb)) return;
+    if (notInRange(params, 0, 1, val, controller)) return;
     digitalWrite(REN, (val ? LOW : HIGH));
     if (controller.config.isVerb) {
-      arSerial->print(F("REN: "));
-      arSerial->println(val ? "REN asserted" : "REN un-asserted") ;
+      controller.stream.print(F("REN: "));
+      controller.stream.println(val ? "REN asserted" : "REN un-asserted") ;
     };
   } else {
-    arSerial->println(digitalRead(REN) ? 0 : 1);
+    controller.stream.println(digitalRead(REN) ? 0 : 1);
   }
 #endif
 }
@@ -890,8 +889,8 @@ void ren_h(char *params, Controller& controller) {
 /***** Enable verbose mode 0=OFF; 1=ON *****/
 void verb_h(char *params, Controller& controller) {
   controller.config.isVerb = !controller.config.isVerb;
-  arSerial->print("Verbose: ");
-  arSerial->println(controller.config.isVerb ? "ON" : "OFF");
+  controller.stream.print("Verbose: ");
+  controller.stream.println(controller.config.isVerb ? "ON" : "OFF");
 }
 
 
@@ -908,12 +907,12 @@ void setvstr_h(char *params, Controller& controller) {
   strncat(idparams, params, plen);
 
 /*
-arSerial->print(F("Plen: "));
-arSerial->println(plen);
-arSerial->print(F("Params: "));
-arSerial->println(params);
-arSerial->print(F("IdParams: "));
-arSerial->println(idparams);
+controller.stream.print(F("Plen: "));
+controller.stream.println(plen);
+controller.stream.print(F("Params: "));
+controller.stream.println(params);
+controller.stream.print(F("IdParams: "));
+controller.stream.println(idparams);
 */
 
   id_h(idparams, controller);
@@ -925,8 +924,8 @@ arSerial->println(idparams);
     memset(controller.config.vstr, '\0', 48);
     strncpy(controller.config.vstr, params, len);
     if (controller.config.isVerb) {
-      arSerial->print(F("Changed version string to: "));
-      arSerial->println(params);
+      controller.stream.print(F("Changed version string to: "));
+      controller.stream.println(params);
     };
   }
 */
@@ -937,15 +936,15 @@ arSerial->println(idparams);
 void ton_h(char *params, Controller& controller) {
   uint16_t val;
   if (params != NULL) {
-    if (notInRange(params, 0, 1, val, controller.config.isVerb)) return;
+    if (notInRange(params, 0, 1, val, controller)) return;
     controller.isTO = val ? true : false;
     if (controller.isTO) controller.isRO = false; // Read-only mode must be disabled in TO mode!
     if (controller.config.isVerb) {
-      arSerial->print(F("TON: "));
-      arSerial->println(val ? "ON" : "OFF") ;
+      controller.stream.print(F("TON: "));
+      controller.stream.println(val ? "ON" : "OFF") ;
     }
   } else {
-    arSerial->println(controller.isTO);
+    controller.stream.println(controller.isTO);
   }
 }
 
@@ -962,7 +961,7 @@ void ton_h(char *params, Controller& controller) {
 void srqa_h(char *params, Controller& controller) {
   uint16_t val;
   if (params != NULL) {
-    if (notInRange(params, 0, 1, val, controller.config.isVerb)) return;
+    if (notInRange(params, 0, 1, val, controller)) return;
     switch (val) {
       case 0:
         controller.isSrqa = false;
@@ -971,9 +970,9 @@ void srqa_h(char *params, Controller& controller) {
         controller.isSrqa = true;
         break;
     }
-    if (controller.config.isVerb) arSerial->println(controller.isSrqa ? "SRQ auto ON" : "SRQ auto OFF") ;
+    if (controller.config.isVerb) controller.stream.println(controller.isSrqa ? "SRQ auto ON" : "SRQ auto OFF") ;
   } else {
-    arSerial->println(controller.isSrqa);
+    controller.stream.println(controller.isSrqa);
   }
 }
 
@@ -989,12 +988,12 @@ void repeat_h(char *params, Controller& controller) {
     // Count (number of repetitions)
     param = strtok(params, " \t");
     if (strlen(param) > 0) {
-      if (notInRange(param, 2, 255, count, controller.config.isVerb)) return;
+      if (notInRange(param, 2, 255, count, controller)) return;
     }
     // Time delay (milliseconds)
     param = strtok(NULL, " \t");
     if (strlen(param) > 0) {
-      if (notInRange(param, 0, 30000, tmdly, controller.config.isVerb)) return;
+      if (notInRange(param, 0, 30000, tmdly, controller)) return;
     }
 
     // Pointer to remainder of parameters string
@@ -1007,13 +1006,13 @@ void repeat_h(char *params, Controller& controller) {
         gpib.gpibReceiveData();
       }
     } else {
-      errBadCmd();
-      if (controller.config.isVerb) arSerial->println(F("Missing parameter"));
+      errBadCmd(controller);
+      if (controller.config.isVerb) controller.stream.println(F("Missing parameter"));
       return;
     }
   } else {
-    errBadCmd();
-    if (controller.config.isVerb) arSerial->println(F("Missing parameters"));
+    errBadCmd(controller);
+    if (controller.config.isVerb) controller.stream.println(F("Missing parameters"));
   }
 
 }
@@ -1026,23 +1025,23 @@ void macro_h(char *params, Controller& controller) {
   const char * macro;
 
   if (params != NULL) {
-    if (notInRange(params, 0, 9, val, controller.config.isVerb)) return;
+    if (notInRange(params, 0, 9, val, controller)) return;
     //    execMacro((uint8_t)val);
     controller.runMacro = (uint8_t)val;
   } else {
     for (int i = 0; i < 10; i++) {
       macro = (pgm_read_word(macros + i));
-      //      arSerial->print(i);arSerial->print(F(": "));
+      //      controller.stream.print(i);controller.stream.print(F(": "));
       if (strlen_P(macro) > 0) {
-        arSerial->print(i);
-        arSerial->print(" ");
+        controller.stream.print(i);
+        controller.stream.print(" ");
       }
     }
-    arSerial->println();
+    controller.stream.println();
   }
 #else
   memset(params, '\0', 5);
-  arSerial->println(F("Disabled"));
+  controller.stream.println(F("Disabled"));
 #endif
 }
 
@@ -1065,7 +1064,7 @@ void xdiag_h(char *params, Controller& controller){
     if (strlen(param)<4){
       mode = atoi(param);
       if (mode>2) {
-        arSerial->println(F("Invalid: 0=data bus; 1=control bus"));
+        controller.stream.println(F("Invalid: 0=data bus; 1=control bus"));
         return;
       }
     }
@@ -1105,14 +1104,14 @@ void xdiag_h(char *params, Controller& controller){
 void tmbus_h(char *params, Controller& controller) {
   uint16_t val;
   if (params != NULL) {
-    if (notInRange(params, 0, 30000, val, controller.config.isVerb)) return;
+    if (notInRange(params, 0, 30000, val, controller)) return;
     controller.config.tmbus = val;
     if (controller.config.isVerb) {
-      arSerial->print(F("TmBus set to: "));
-      arSerial->println(val);
+      controller.stream.print(F("TmBus set to: "));
+      controller.stream.println(val);
     };
   } else {
-    arSerial->println(controller.config.tmbus, DEC);
+    controller.stream.println(controller.config.tmbus, DEC);
   }
 }
 
@@ -1131,8 +1130,8 @@ void id_h(char *params, Controller& controller) {
   char serialStr[10];
 
 #ifdef DEBUG10
-  arSerial->print(F("Params: "));
-  arSerial->println(params);
+  controller.stream.print(F("Params: "));
+  controller.stream.println(params);
 #endif
 
   if (params != NULL) {
@@ -1142,23 +1141,23 @@ void id_h(char *params, Controller& controller) {
     if (dlen) {
       if (strncmp(keyword, "verstr", 6)==0) {
 #ifdef DEBUG10
-        arSerial->print(F("Keyword: "));
-        arSerial->println(keyword);
-        arSerial->print(F("DataStr: "));
-        arSerial->println(datastr);
+        controller.stream.print(F("Keyword: "));
+        controller.stream.println(keyword);
+        controller.stream.print(F("DataStr: "));
+        controller.stream.println(datastr);
 #endif
         if (dlen>0 && dlen<48) {
 #ifdef DEBUG10
-        arSerial->println(F("Length OK"));
+        controller.stream.println(F("Length OK"));
 #endif
           memset(controller.config.vstr, '\0', 48);
           strncpy(controller.config.vstr, datastr, dlen);
-          if (controller.config.isVerb) arSerial->print(F("VerStr: "));
-		  arSerial->println(controller.config.vstr);
+          if (controller.config.isVerb) controller.stream.print(F("VerStr: "));
+		  controller.stream.println(controller.config.vstr);
         }else{
           if (controller.config.isVerb)
-			  arSerial->println(F("Length of version string must not exceed 48 characters!"));
-          errBadCmd();
+			  controller.stream.println(F("Length of version string must not exceed 48 characters!"));
+          errBadCmd(controller);
         }
         return;
       }
@@ -1167,8 +1166,8 @@ void id_h(char *params, Controller& controller) {
           memset(controller.config.sname, '\0', 16);
           strncpy(controller.config.sname, datastr, dlen);
         }else{
-          if (controller.config.isVerb) arSerial->println(F("Length of name must not exceed 15 characters!"));
-          errBadCmd();
+          if (controller.config.isVerb) controller.stream.println(F("Length of name must not exceed 15 characters!"));
+          errBadCmd(controller);
         }
         return;
       }
@@ -1176,46 +1175,46 @@ void id_h(char *params, Controller& controller) {
         if (dlen < 10) {
           controller.config.serial = atol(datastr);
         }else{
-          if (controller.config.isVerb) arSerial->println(F("Serial number must not exceed 9 characters!"));
-          errBadCmd();
+          if (controller.config.isVerb) controller.stream.println(F("Serial number must not exceed 9 characters!"));
+          errBadCmd(controller);
         }
         return;
       }
-//      errBadCmd();
+//      errBadCmd(controller);
     }else{
       if (strncmp(keyword, "verstr", 6)==0) {
-        arSerial->println(controller.config.vstr);
+        controller.stream.println(controller.config.vstr);
         return;
       }
       if (strncmp(keyword, "name", 4)==0) {
-        arSerial->println(controller.config.sname);
+        controller.stream.println(controller.config.sname);
         return;
       }
       if (strncmp(keyword, "serial", 6)==0) {
         memset(serialStr, '\0', 10);
         snprintf(serialStr, 10, "%09lu", controller.config.serial);  // Max str length = 10-1 i.e 9 digits + null terminator
-        arSerial->println(serialStr);
+        controller.stream.println(serialStr);
         return;
       }
     }
   }
-  errBadCmd();
+  errBadCmd(controller);
 }
 
 
 void idn_h(char * params, Controller& controller){
   uint16_t val;
   if (params != NULL) {
-    if (notInRange(params, 0, 2, val, controller.config.isVerb)) return;
+    if (notInRange(params, 0, 2, val, controller)) return;
     controller.config.idn = (uint8_t)val;
     if (controller.config.isVerb) {
-      arSerial->print(F("Sending IDN: "));
-      arSerial->print(val ? "Enabled" : "Disabled");
-      if (val==2) arSerial->print(F(" with serial number"));
-      arSerial->println();
+      controller.stream.print(F("Sending IDN: "));
+      controller.stream.print(val ? "Enabled" : "Disabled");
+      if (val==2) controller.stream.print(F(" with serial number"));
+      controller.stream.println();
     };
   } else {
-    arSerial->println(controller.config.idn, DEC);
+    controller.stream.println(controller.config.idn, DEC);
   }
 }
 
@@ -1226,7 +1225,7 @@ void idn_h(char * params, Controller& controller){
  * to a uint16_t integer in rval. Returns true if successful,
  * false if not
 */
-bool notInRange(char *param, uint16_t lowl, uint16_t higl, uint16_t &rval, bool verbose) {
+bool notInRange(char *param, uint16_t lowl, uint16_t higl, uint16_t &rval, Controller& controller) {
 
   // Null string passed?
   if (strlen(param) == 0) return true;
@@ -1237,12 +1236,12 @@ bool notInRange(char *param, uint16_t lowl, uint16_t higl, uint16_t &rval, bool 
 
   // Check range
   if (rval < lowl || rval > higl) {
-    errBadCmd();
-    if (verbose) {
-      arSerial->print(F("Valid range is between "));
-      arSerial->print(lowl);
-      arSerial->print(F(" and "));
-      arSerial->println(higl);
+    errBadCmd(controller);
+    if (controller.config.isVerb) {
+      controller.stream.print(F("Valid range is between "));
+      controller.stream.print(lowl);
+      controller.stream.print(F(" and "));
+      controller.stream.println(higl);
     }
     return true;
   }
@@ -1250,6 +1249,6 @@ bool notInRange(char *param, uint16_t lowl, uint16_t higl, uint16_t &rval, bool 
 }
 
 /***** Unrecognized command *****/
-void errBadCmd() {
-  arSerial->println(F("Unrecognized command"));
+void errBadCmd(Controller& controller) {
+  controller.stream.println(F("Unrecognized command"));
 }

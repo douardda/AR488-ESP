@@ -46,9 +46,6 @@ public:
 
 public:
   AR488Conf config;
-
-private:
-  bool verbose;
   Stream &stream;
 
 /***** PARSE BUFFERS *****/
