@@ -946,7 +946,7 @@ void GPIB::sendToInstrument(char *buffr, uint8_t dsize) {
 #endif
 
   // Is this an instrument query command (string ending with ?)
-  if (buffr[dsize-1] == '?') AR488st.isQuery = true;
+  if (buffr[dsize-1] == '?') isQuery = true;
 
   // Send string to instrument
   gpibSendData(buffr, dsize);

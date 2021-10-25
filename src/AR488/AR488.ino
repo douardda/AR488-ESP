@@ -382,10 +382,10 @@ void loop() {
         gpib.gpibReceiveData();
       }
       // Auto-receive data from GPIB bus following a query command
-      if (AR488.amode == 2 && AR488st.isQuery) {
+      if (AR488.amode == 2 && gpib.isQuery) {
         //        delay(10);
         gpib.gpibReceiveData();
-        AR488st.isQuery = false;
+        gpib.isQuery = false;
       }
     }
 
