@@ -4,9 +4,8 @@
 #include "commands.h"
 
 
-GPIB::GPIB(Stream& stream, AR488Conf& conf, Controller& controller):
+GPIB::GPIB(Stream& stream, Controller& controller):
 		outstream(stream),
-		AR488(conf),
 		controller(controller),
 		verbose(false)
 {
@@ -46,7 +45,7 @@ bool GPIB::gpibSendCmd(uint8_t cmdByte) {
 
   // Send the command
   stat = gpibWriteByte(cmdByte);
-  if (stat && AR488.isVerb) {
+  if (stat && controller.config.isVerb) {
     outstream.print(F("gpibSendCmd: failed to send command "));
     outstream.print(cmdByte, HEX);
     outstream.println(F(" to device"));
@@ -63,12 +62,12 @@ bool GPIB::gpibSendCmd(uint8_t cmdByte) {
 /***** Send the status byte *****/
 void GPIB::gpibSendStatus() {
   // Have been addressed and polled so send the status byte
-  if (AR488.isVerb) {
+  if (controller.config.isVerb) {
     outstream.print(F("Sending status byte: "));
-    outstream.println(AR488.stat);
+    outstream.println(controller.config.stat);
   };
   setGpibControls(DTAS);
-  gpibWriteByte(AR488.stat);
+  gpibWriteByte(controller.config.stat);
   setGpibControls(DIDS);
 }
 
@@ -82,14 +81,14 @@ void GPIB::gpibSendData(char *data, uint8_t dsize) {
   if (controller.isRO) return;
 
   // Controler can unlisten bus and address devices
-  if (AR488.cmode == 2) {
+  if (controller.config.cmode == 2) {
 
     if (deviceAddressing) {
       // Address device to listen
-      if (addrDev(AR488.paddr, 0)) {
-        if (AR488.isVerb) {
+      if (addrDev(controller.config.paddr, 0)) {
+        if (controller.config.isVerb) {
           outstream.print(F("gpibSendData: failed to address device "));
-          outstream.print(AR488.paddr);
+          outstream.print(controller.config.paddr);
           outstream.println(F(" to listen"));
         }
         return;
@@ -116,7 +115,7 @@ void GPIB::gpibSendData(char *data, uint8_t dsize) {
   // Write the data string
   for (int i = 0; i < dsize; i++) {
     // If EOI asserting is on
-    if (AR488.eoi) {
+    if (controller.config.eoi) {
       // Send all characters
       err = gpibWriteByte(data[i]);
     } else {
@@ -136,14 +135,14 @@ void GPIB::gpibSendData(char *data, uint8_t dsize) {
   if (!err) {
     // Write terminators according to EOS setting
     // Do we need to write a CR?
-    if ((AR488.eos & 0x2) == 0) {
+    if ((controller.config.eos & 0x2) == 0) {
       gpibWriteByte(CR);
 #ifdef DEBUG3
       dbSerial->println(F("Appended CR"));
 #endif
     }
     // Do we need to write an LF?
-    if ((AR488.eos & 0x1) == 0) {
+    if ((controller.config.eos & 0x1) == 0) {
       gpibWriteByte(LF);
 #ifdef DEBUG3
       dbSerial->println(F("Appended LF"));
@@ -152,7 +151,7 @@ void GPIB::gpibSendData(char *data, uint8_t dsize) {
   }
 
   // If EOI enabled and no more data to follow then assert EOI
-  if (AR488.eoi && !controller.dataBufferFull) {
+  if (controller.config.eoi && !controller.dataBufferFull) {
     setGpibState(0b00000000, 0b00010000, 0);
     //    setGpibState(0b00010000, 0b00000000, 0b00010000);
     delayMicroseconds(40);
@@ -163,12 +162,12 @@ void GPIB::gpibSendData(char *data, uint8_t dsize) {
 #endif
   }
 
-  if (AR488.cmode == 2) {   // Controller mode
+  if (controller.config.cmode == 2) {   // Controller mode
     if (!err) {
       if (deviceAddressing) {
         // Untalk controller and unlisten bus
         if (uaddrDev()) {
-          if (AR488.isVerb) outstream.println(F("gpibSendData: Failed to unlisten bus"));
+          if (controller.config.isVerb) outstream.println(F("gpibSendData: Failed to unlisten bus"));
         }
 
 #ifdef DEBUG3
@@ -202,7 +201,7 @@ bool GPIB::gpibReceiveData() {
 
   uint8_t r = 0; //, db;
   uint8_t bytes[3] = {0};
-  uint8_t eor = AR488.eor&7;
+  uint8_t eor = controller.config.eor&7;
   int x = 0;
   bool eoiStatus;
   bool eoiDetected = false;
@@ -212,20 +211,20 @@ bool GPIB::gpibReceiveData() {
 
   // Set status of EOI detection
   eoiStatus = rEoi; // Save status of rEoi flag
-  if (AR488.eor==7) rEoi = true;    // Using EOI as terminator
+  if (controller.config.eor==7) rEoi = true;    // Using EOI as terminator
 
   // Set up for reading in Controller mode
-  if (AR488.cmode == 2) {   // Controler mode
+  if (controller.config.cmode == 2) {   // Controler mode
     // Address device to talk
-    if (addrDev(AR488.paddr, 1)) {
-      if (AR488.isVerb) {
+    if (addrDev(controller.config.paddr, 1)) {
+      if (controller.config.isVerb) {
         outstream.print(F("Failed to address the device"));
-        outstream.print(AR488.paddr);
+        outstream.print(controller.config.paddr);
         outstream.println(F(" to talk"));
       }
     }
     // Wait for instrument ready
-    Wait_on_pin_state(HIGH, NRFD, AR488.rtmo);
+    Wait_on_pin_state(HIGH, NRFD, controller.config.rtmo);
     // Set GPIB control lines to controller read mode
     setGpibControls(CLAS);
 
@@ -263,7 +262,7 @@ bool GPIB::gpibReceiveData() {
     r = gpibReadByte(&bytes[0], &eoiDetected);
 
     // When reading with amode=3 or EOI check serial input and break loop if neccessary
-    if ((AR488.amode==3) || rEoi) controller.serialIn_h();
+    if ((controller.config.amode==3) || rEoi) controller.serialIn_h();
 
     // Line terminator detected (loop breaks on command being detected or data buffer full)
     if (controller.lnRdy > 0) {
@@ -314,16 +313,16 @@ bool GPIB::gpibReceiveData() {
 #endif
 
   // End of data - if verbose, report how many bytes read
-  if (AR488.isVerb) {
+  if (controller.config.isVerb) {
     outstream.print(F("Bytes read: "));
     outstream.println(x);
   }
 
   // Detected that EOI has been asserted
   if (eoiDetected) {
-    if (AR488.isVerb) outstream.println(F("EOI detected!"));
+    if (controller.config.isVerb) outstream.println(F("EOI detected!"));
     // If eot_enabled then add EOT character
-    if (AR488.eot_en) outstream.print(AR488.eot_ch);
+    if (controller.config.eot_en) outstream.print(controller.config.eot_ch);
   }
 
   // Return rEoi to previous state
@@ -331,16 +330,16 @@ bool GPIB::gpibReceiveData() {
 
   // Verbose timeout error
   if (r > 0) {
-    if (AR488.isVerb && r == 1) outstream.println(F("Timeout waiting for sender!"));
-    if (AR488.isVerb && r == 2) outstream.println(F("Timeout waiting for transfer to complete!"));
+    if (controller.config.isVerb && r == 1) outstream.println(F("Timeout waiting for sender!"));
+    if (controller.config.isVerb && r == 2) outstream.println(F("Timeout waiting for transfer to complete!"));
   }
 
   // Return controller to idle state
-  if (AR488.cmode == 2) {
+  if (controller.config.cmode == 2) {
 
     // Untalk bus and unlisten controller
     if (uaddrDev()) {
-      if (AR488.isVerb) outstream.print(F("gpibSendData: Failed to untalk bus"));
+      if (controller.config.isVerb) outstream.print(F("gpibSendData: Failed to untalk bus"));
     }
 
     // Set controller back to idle state
@@ -429,8 +428,8 @@ uint8_t GPIB::gpibReadByte(uint8_t *db, bool *eoi) {
   }
 
   // Wait for DAV to go LOW indicating talker has finished setting data lines..
-  if (Wait_on_pin_state(LOW, DAV, AR488.rtmo))  {
-    if (AR488.isVerb) outstream.println(F("gpibReadByte: timeout waiting for DAV to go LOW"));
+  if (Wait_on_pin_state(LOW, DAV, controller.config.rtmo))  {
+    if (controller.config.isVerb) outstream.println(F("gpibReadByte: timeout waiting for DAV to go LOW"));
     setGpibState(0b00000000, 0b00000100, 0);
     // No more data for you?
     return 1;
@@ -449,8 +448,8 @@ uint8_t GPIB::gpibReadByte(uint8_t *db, bool *eoi) {
   setGpibState(0b00000010, 0b00000010, 0);
 
   // Wait for DAV to go HIGH indicating data no longer valid (i.e. transfer complete)
-  if (Wait_on_pin_state(HIGH, DAV, AR488.rtmo))  {
-    if (AR488.isVerb) outstream.println(F("gpibReadByte: timeout waiting DAV to go HIGH"));
+  if (Wait_on_pin_state(HIGH, DAV, controller.config.rtmo))  {
+    if (controller.config.isVerb) outstream.println(F("gpibReadByte: timeout waiting DAV to go HIGH"));
     return 2;
   }
 
@@ -458,7 +457,7 @@ uint8_t GPIB::gpibReadByte(uint8_t *db, bool *eoi) {
   setGpibState(0b00000000, 0b00000010, 0);
 
   // GPIB bus DELAY
-  delayMicroseconds(AR488.tmbus);
+  delayMicroseconds(controller.config.tmbus);
 
   return 0;
 
@@ -482,7 +481,7 @@ bool GPIB::gpibWriteByte(uint8_t db) {
   setGpibDbus(0);
 
   // GPIB bus DELAY
-  delayMicroseconds(AR488.tmbus);
+  delayMicroseconds(controller.config.tmbus);
 
   // Exit successfully
   return err;
@@ -493,13 +492,13 @@ bool GPIB::gpibWriteByte(uint8_t db) {
 bool GPIB::gpibWriteByteHandshake(uint8_t db) {
 
     // Wait for NDAC to go LOW (indicating that devices are at attention)
-  if (Wait_on_pin_state(LOW, NDAC, AR488.rtmo)) {
-    if (AR488.isVerb) outstream.println(F("gpibWriteByte: timeout waiting for receiver attention [NDAC asserted]"));
+  if (Wait_on_pin_state(LOW, NDAC, controller.config.rtmo)) {
+    if (controller.config.isVerb) outstream.println(F("gpibWriteByte: timeout waiting for receiver attention [NDAC asserted]"));
     return true;
   }
   // Wait for NRFD to go HIGH (indicating that receiver is ready)
-  if (Wait_on_pin_state(HIGH, NRFD, AR488.rtmo))  {
-    if (AR488.isVerb) outstream.println(F("gpibWriteByte: timeout waiting for receiver ready - [NRFD unasserted]"));
+  if (Wait_on_pin_state(HIGH, NRFD, controller.config.rtmo))  {
+    if (controller.config.isVerb) outstream.println(F("gpibWriteByte: timeout waiting for receiver ready - [NRFD unasserted]"));
     return true;
   }
 
@@ -510,14 +509,14 @@ bool GPIB::gpibWriteByteHandshake(uint8_t db) {
   setGpibState(0b00000000, 0b00001000, 0);
 
   // Wait for NRFD to go LOW (receiver accepting data)
-  if (Wait_on_pin_state(LOW, NRFD, AR488.rtmo))  {
-    if (AR488.isVerb) outstream.println(F("gpibWriteByte: timeout waiting for data to be accepted - [NRFD asserted]"));
+  if (Wait_on_pin_state(LOW, NRFD, controller.config.rtmo))  {
+    if (controller.config.isVerb) outstream.println(F("gpibWriteByte: timeout waiting for data to be accepted - [NRFD asserted]"));
     return true;
   }
 
   // Wait for NDAC to go HIGH (data accepted)
-  if (Wait_on_pin_state(HIGH, NDAC, AR488.rtmo))  {
-    if (AR488.isVerb) outstream.println(F("gpibWriteByte: timeout waiting for data accepted signal - [NDAC unasserted]"));
+  if (Wait_on_pin_state(HIGH, NDAC, controller.config.rtmo))  {
+    if (controller.config.isVerb) outstream.println(F("gpibWriteByte: timeout waiting for data accepted signal - [NDAC unasserted]"));
     return true;
   }
 
@@ -534,11 +533,11 @@ bool GPIB::addrDev(uint8_t addr, bool dir) {
   if (dir) {
     // Device to talk, controller to listen
     if (gpibSendCmd(GC_TAD + addr)) return ERR;
-    if (gpibSendCmd(GC_LAD + AR488.caddr)) return ERR;
+    if (gpibSendCmd(GC_LAD + controller.config.caddr)) return ERR;
   } else {
     // Device to listen, controller to talk
     if (gpibSendCmd(GC_LAD + addr)) return ERR;
-    if (gpibSendCmd(GC_TAD + AR488.caddr)) return ERR;
+    if (gpibSendCmd(GC_TAD + controller.config.caddr)) return ERR;
   }
   return OK;
 }
@@ -723,7 +722,7 @@ void GPIB::setGpibControls(uint8_t state) {
   cstate = state;
 
   // GPIB bus delay (to allow state to settle)
-  delayMicroseconds(AR488.tmbus);
+  delayMicroseconds(controller.config.tmbus);
 
 }
 
@@ -763,7 +762,7 @@ void GPIB::attnRequired() {
 #endif
 
       // Device is addressed to listen
-      if (AR488.paddr == (db ^ 0x20)) { // MLA = db^0x20
+      if (controller.config.paddr == (db ^ 0x20)) { // MLA = db^0x20
 #ifdef DEBUG5
         dbSerial->println(F("attnRequired: Controller wants me to data accept data <<<"));
 #endif
@@ -771,7 +770,7 @@ void GPIB::attnRequired() {
       }
 
       // Device is addressed to talk
-      if (AR488.paddr == (db ^ 0x40)) { // MLA = db^0x40
+      if (controller.config.paddr == (db ^ 0x40)) { // MLA = db^0x40
           // Call talk handler to send data
           mta = true;
 #ifdef DEBUG5
@@ -860,31 +859,31 @@ void GPIB::mta_h(){
 /***** Selected Device Clear *****/
 void GPIB::sdc_h() {
   // If being addressed then reset
-  if (AR488.isVerb) outstream.println(F("Resetting..."));
+  if (controller.config.isVerb) outstream.println(F("Resetting..."));
 #ifdef DEBUG5
   dbSerial->print(F("Reset adressed to me: ")); dbSerial->println(aTl);
 #endif
   if (aTl) controller.reset();
-  if (AR488.isVerb) outstream.println(F("Reset failed."));
+  if (controller.config.isVerb) outstream.println(F("Reset failed."));
 }
 
 
 /***** Serial Poll Disable *****/
 void GPIB::spd_h() {
-  if (AR488.isVerb) outstream.println(F("<- serial poll request ended."));
+  if (controller.config.isVerb) outstream.println(F("<- serial poll request ended."));
 }
 
 
 /***** Serial Poll Enable *****/
 void GPIB::spe_h() {
-  if (AR488.isVerb) outstream.println(F("Serial poll request received from controller ->"));
+  if (controller.config.isVerb) outstream.println(F("Serial poll request received from controller ->"));
   gpibSendStatus();
-  if (AR488.isVerb) outstream.println(F("Status sent."));
+  if (controller.config.isVerb) outstream.println(F("Status sent."));
   // Clear the SRQ bit
-  AR488.stat = AR488.stat & ~0x40;
+  controller.config.stat = controller.config.stat & ~0x40;
   // Clear the SRQ signal
   clrSrqSig();
-  if (AR488.isVerb) outstream.println(F("SRQ bit cleared (if set)."));
+  if (controller.config.isVerb) outstream.println(F("SRQ bit cleared (if set)."));
 }
 
 
@@ -951,7 +950,7 @@ void GPIB::sendToInstrument(char *buffr, uint8_t dsize) {
   if (controller.dataBufferFull) controller.dataBufferFull = false;
 
   // Show a prompt on completion?
-  if (AR488.isVerb) controller.showPrompt();
+  if (controller.config.isVerb) controller.showPrompt();
 
   // Flush the parse buffer
   controller.flushPbuf();
@@ -964,13 +963,13 @@ void GPIB::sendToInstrument(char *buffr, uint8_t dsize) {
 
 
 void GPIB::assertIfc() {
-  if (AR488.cmode==2) {
+  if (controller.config.cmode==2) {
     // Assert IFC
     setGpibState(0b00000000, 0b00000001, 0);
     delayMicroseconds(150);
     // De-assert IFC
     setGpibState(0b00000001, 0b00000001, 0);
-    if (AR488.isVerb)
+    if (controller.config.isVerb)
 	  outstream.println(F("IFC signal asserted for 150 microseconds"));
   }
 }

@@ -188,9 +188,8 @@ Stream *dbSerial = (Stream*) dbSerial_;
 /**********************************/
 
 /****** Global variables with volatile values related to controller state *****/
-AR488Conf AR488;
-Controller controller(*arSerial, AR488);
-GPIB gpib(*arSerial, AR488, controller);
+Controller controller(*arSerial);
+GPIB gpib(*arSerial, controller);
 
 /***** ^^^^^^^^^^^^^^^^^^^^^^^^ *****/
 /***** COMMON VARIABLES SECTION *****/
@@ -262,7 +261,7 @@ void setup() {
 
 
   // Initialise
-  initAR488();
+  controller.initConfig();
 /*
 #ifdef E2END
   // Read data from non-volatile memory
@@ -285,7 +284,7 @@ void setup() {
   #ifdef SN7516X_DC
     pinMode(SN7516X_DC, OUTPUT);
   #endif
-  if (AR488.cmode==2) {
+  if (controller.config.cmode==2) {
     // Set controller mode on SN75161/2
     digitalWrite(SN7516X_TE, LOW);
     #ifdef SN7516X_DC
@@ -307,10 +306,10 @@ void setup() {
 #endif
 
   // Initialize the interface in device mode
-  if (AR488.cmode == 1) gpib.initDevice();
+  if (controller.config.cmode == 1) gpib.initDevice();
 
   // Initialize the interface in controller mode
-  if (AR488.cmode == 2) gpib.initController();
+  if (controller.config.cmode == 2) gpib.initController();
 
   gpib.clearATN();
   gpib.clearSRQ();
@@ -367,21 +366,21 @@ void loop() {
 
   // lnRdy=1: received a command so execute it...
   if (controller.lnRdy == 1) {
-    execCmd(controller.pBuf, controller.pbPtr, AR488, controller);
+    execCmd(controller.pBuf, controller.pbPtr, controller);
   }
 
   // Controller mode:
-  if (AR488.cmode == 2) {
+  if (controller.config.cmode == 2) {
     // lnRdy=2: received data - send it to the instrument...
     if (controller.lnRdy == 2) {
       gpib.sendToInstrument(controller.pBuf, controller.pbPtr);
       // Auto-read data from GPIB bus following any command
-      if (AR488.amode == 1) {
+      if (controller.config.amode == 1) {
         //        delay(10);
         gpib.gpibReceiveData();
       }
       // Auto-receive data from GPIB bus following a query command
-      if (AR488.amode == 2 && gpib.isQuery) {
+      if (controller.config.amode == 2 && gpib.isQuery) {
         //        delay(10);
         gpib.gpibReceiveData();
         gpib.isQuery = false;
@@ -390,16 +389,16 @@ void loop() {
 
     // Check status of SRQ and SPOLL if asserted
     if (gpib.isSRQ() && controller.isSrqa) {
-			spoll_h(NULL, AR488);
+			spoll_h(NULL, controller);
       gpib.clearSRQ();
     }
 
     // Continuous auto-receive data from GPIB bus
-    if (AR488.amode == 3 && controller.aRead) gpib.gpibReceiveData();
+    if (controller.config.amode == 3 && controller.aRead) gpib.gpibReceiveData();
   }
 
   // Device mode:
-  if (AR488.cmode == 1) {
+  if (controller.config.cmode == 1) {
     if (controller.isTO) {
       if (controller.lnRdy == 2) gpib.sendToInstrument(controller.pBuf, controller.pbPtr);
     }else if (controller.isRO) {
@@ -415,11 +414,11 @@ void loop() {
 
   // IDN query ?
   if (controller.sendIdn) {
-    if (AR488.idn==1) arSerial->println(AR488.sname);
-    if (AR488.idn==2) {
-				arSerial->print(AR488.sname);
+    if (controller.config.idn==1) arSerial->println(controller.config.sname);
+    if (controller.config.idn==2) {
+				arSerial->print(controller.config.sname);
 				arSerial->print("-");
-				arSerial->println(AR488.serial);
+				arSerial->println(controller.config.serial);
 		}
     controller.sendIdn = false;
   }
@@ -432,11 +431,6 @@ void loop() {
 /***** END MAIN LOOP *****/
 
 
-/***** Initialise the interface *****/
-void initAR488() {
-  // Set default values ({'\0'} sets version string array to null)
-  AR488 = {false, false, 2, 0, 1, 0, 0, 0, 0, 1200, 0, {'\0'}, 0, 0, {'\0'}, 0, 0, false};
-}
 
 
 
@@ -479,7 +473,7 @@ void execMacro(uint8_t idx) {
         }
       }
       if (isCmd(pBuf)){
-				execCmd(controller.pBuf, strlen(controller.pBuf), AR488, controller);
+				execCmd(controller.pBuf, strlen(controller.pBuf), controller);
       }else{
         gpib.sendToInstrument(controller.pBuf, strlen(controller.pBuf));
       }

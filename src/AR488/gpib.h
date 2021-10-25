@@ -1,12 +1,11 @@
 #if !defined(GPIB_H)
 
 #include <Arduino.h>
-#include "AR488.h"
 #include "controller.h"
 
 class GPIB {
 public:
-  GPIB(Stream&, AR488Conf&, Controller&);
+  GPIB(Stream&, Controller&);
 
   void initDevice();
   void initController();
@@ -52,7 +51,6 @@ public:
 
 private:
   Stream &outstream;
-  AR488Conf &AR488;
   Controller &controller;
   bool verbose;
 

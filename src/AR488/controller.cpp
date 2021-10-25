@@ -1,6 +1,5 @@
 #include <Arduino.h>
 #include "controller.h"
-//#include "AR488.h"
 
 
 // TODO: dbSerial
@@ -75,11 +74,11 @@
 */
 
 
-Controller::Controller(Stream& stream, AR488Conf& conf):
+Controller::Controller(Stream& stream):
 		verbose(false),
-		stream(stream),
-		AR488(conf)
+		stream(stream)
 {
+	initConfig();
 }
 
 /***** Add character to the buffer and parse *****/
@@ -122,7 +121,7 @@ uint8_t Controller::parseInput(char c) {
                 r = 1;
               }
             // Buffer contains *idn? query and interface to respond
-            }else if (pbPtr>3 && AR488.idn>0 && isIdnQuery(pBuf)){
+            }else if (pbPtr>3 && config.idn>0 && isIdnQuery(pBuf)){
               sendIdn = true;
               flushPbuf();
             // Buffer has at least 1 character = instrument data to send to gpib bus
@@ -166,7 +165,7 @@ uint8_t Controller::parseInput(char c) {
   }
   if (pbPtr >= PBSIZE) {
     if (isCmd(pBuf) && !r) {  // Command without terminator and buffer full
-      if (AR488.isVerb) {
+      if (config.isVerb) {
         stream.println(F("ERROR - Command buffer overflow!"));
       }
       flushPbuf();
@@ -263,7 +262,7 @@ void Controller::reset() {
   wdt_enable(WDTO_1S);
   while (millis() < tout) {};
   // Should never reach here....
-  if (AR488.isVerb) {
+  if (config.isVerb) {
     arSerial->println(F("Reset FAILED."));
   };
 #else
@@ -273,4 +272,11 @@ void Controller::reset() {
 #endif
 #endif
 
+}
+
+void Controller::initConfig()
+{
+  /***** Initialise the interface *****/
+  // Set default values ({'\0'} sets version string array to null)
+  config = {false, false, 2, 0, 1, 0, 0, 0, 0, 1200, 0, {'\0'}, 0, 0, {'\0'}, 0, 0, false};
 }

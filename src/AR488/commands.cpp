@@ -1,5 +1,4 @@
 #include <Arduino.h>
-#include "AR488.h"
 #include "AR488_Layouts.h"
 #include "commands.h"
 #include "gpib.h"
@@ -7,7 +6,6 @@
 
 extern Stream *arSerial;
 extern GPIB gpib;
-extern Controller controller;
 
 
 /***** Array containing index of accepted ++ commands *****/
@@ -61,7 +59,7 @@ static cmdRec cmdHidx [] = {
 };
 
 /***** Execute a command *****/
-void execCmd(char *buffr, uint8_t dsize, AR488Conf& AR488, Controller& controller) {
+void execCmd(char *buffr, uint8_t dsize, Controller& controller) {
   char line[PBSIZE];
 
   // Copy collected chars to line buffer
@@ -85,16 +83,15 @@ void execCmd(char *buffr, uint8_t dsize, AR488Conf& AR488, Controller& controlle
   dbSerial->print(F("execCmd: Sent to the command processor: ")); printHex(line, dsize-2);
 #endif
   // Execute the command
-  //if (AR488.isVerb) arSerial->println(); // Shift output to next line
-  getCmd(line, AR488);
+  getCmd(line, controller);
 
   // Show a prompt on completion?
-  if (AR488.isVerb) controller.showPrompt();
+  if (controller.config.isVerb) controller.showPrompt();
 }
 
 
 /***** Extract command and pass to handler *****/
-void getCmd(char *buffr, AR488Conf& AR488) {
+void getCmd(char *buffr, Controller& controller) {
 
   char *token;  // Pointer to command token
   char *params; // Pointer to parameters (remaining buffer characters)
@@ -132,7 +129,7 @@ void getCmd(char *buffr, AR488Conf& AR488) {
     dbSerial->print("getCmd: found handler for: "); dbSerial->println(cmdHidx[i].token);
 #endif
     // If command is relevant to mode then execute it
-    if (cmdHidx[i].opmode & AR488.cmode) {
+    if (cmdHidx[i].opmode & controller.config.cmode) {
       // If its a command with parameters
       // Copy command parameters to params and call handler with parameters
       params = token + strlen(token) + 1;
@@ -143,14 +140,14 @@ void getCmd(char *buffr, AR488Conf& AR488) {
         dbSerial->print(F("Calling handler with parameters: ")); dbSerial->println(params);
 #endif
         // Call handler with parameters specified
-        cmdHidx[i].handler(params, AR488);
+        cmdHidx[i].handler(params, controller);
       }else{
         // Call handler without parameters
-		cmdHidx[i].handler(NULL, AR488);
+		cmdHidx[i].handler(NULL, controller);
       }
     }else{
       errBadCmd();
-      if (AR488.isVerb) arSerial->println(F("Command not available in this mode."));
+      if (controller.config.isVerb) arSerial->println(F("Command not available in this mode."));
     }
 
   } else {
@@ -165,7 +162,7 @@ void getCmd(char *buffr, AR488Conf& AR488) {
 /*************************************/
 
 /***** Show or change device address *****/
-void addr_h(char *params, AR488Conf& AR488) {
+void addr_h(char *params, Controller& controller) {
   //  char *param, *stat;
   char *param;
   uint16_t val;
@@ -173,36 +170,36 @@ void addr_h(char *params, AR488Conf& AR488) {
 
     // Primary address
     param = strtok(params, " \t");
-    if (notInRange(param, 1, 30, val, AR488.isVerb)) return;
-    if (val == AR488.caddr) {
+    if (notInRange(param, 1, 30, val, controller.config.isVerb)) return;
+    if (val == controller.config.caddr) {
       errBadCmd();
-      if (AR488.isVerb) arSerial->println(F("That is my address! Address of a remote device is required."));
+      if (controller.config.isVerb) arSerial->println(F("That is my address! Address of a remote device is required."));
       return;
     }
-    AR488.paddr = val;
-    if (AR488.isVerb) {
+    controller.config.paddr = val;
+    if (controller.config.isVerb) {
       arSerial->print(F("Set device primary address to: "));
       arSerial->println(val);
     }
 
     // Secondary address
-    AR488.saddr = 0;
+    controller.config.saddr = 0;
     val = 0;
     param = strtok(NULL, " \t");
     if (param != NULL) {
-      if (notInRange(param, 96, 126, val, AR488.isVerb)) return;
-      AR488.saddr = val;
-      if (AR488.isVerb) {
+      if (notInRange(param, 96, 126, val, controller.config.isVerb)) return;
+      controller.config.saddr = val;
+      if (controller.config.isVerb) {
         arSerial->print("Set device secondary address to: ");
         arSerial->println(val);
       }
     }
 
   } else {
-    arSerial->print(AR488.paddr);
-    if (AR488.saddr > 0) {
+    arSerial->print(controller.config.paddr);
+    if (controller.config.saddr > 0) {
       arSerial->print(F(" "));
-      arSerial->print(AR488.saddr);
+      arSerial->print(controller.config.saddr);
     }
     arSerial->println();
   }
@@ -210,141 +207,141 @@ void addr_h(char *params, AR488Conf& AR488) {
 
 
 /***** Show or set read timout *****/
-void rtmo_h(char *params, AR488Conf& AR488) {
+void rtmo_h(char *params, Controller& controller) {
   uint16_t val;
   if (params != NULL) {
-    if (notInRange(params, 1, 32000, val, AR488.isVerb)) return;
-    AR488.rtmo = val;
-    if (AR488.isVerb) {
+    if (notInRange(params, 1, 32000, val, controller.config.isVerb)) return;
+    controller.config.rtmo = val;
+    if (controller.config.isVerb) {
       arSerial->print(F("Set [read_tmo_ms] to: "));
       arSerial->print(val);
       arSerial->println(F(" milliseconds"));
     }
   } else {
-    arSerial->println(AR488.rtmo);
+    arSerial->println(controller.config.rtmo);
   }
 }
 
 
 /***** Show or set end of send character *****/
-void eos_h(char *params, AR488Conf& AR488) {
+void eos_h(char *params, Controller& controller) {
   uint16_t val;
   if (params != NULL) {
-    if (notInRange(params, 0, 3, val, AR488.isVerb)) return;
-    AR488.eos = (uint8_t)val;
-    if (AR488.isVerb) {
+    if (notInRange(params, 0, 3, val, controller.config.isVerb)) return;
+    controller.config.eos = (uint8_t)val;
+    if (controller.config.isVerb) {
       arSerial->print(F("Set EOS to: "));
       arSerial->println(val);
     };
   } else {
-    arSerial->println(AR488.eos);
+    arSerial->println(controller.config.eos);
   }
 }
 
 
 /***** Show or set EOI assertion on/off *****/
-void eoi_h(char *params, AR488Conf& AR488) {
+void eoi_h(char *params, Controller& controller) {
   uint16_t val;
   if (params != NULL) {
-    if (notInRange(params, 0, 1, val, AR488.isVerb)) return;
-    AR488.eoi = val ? true : false;
-    if (AR488.isVerb) {
+    if (notInRange(params, 0, 1, val, controller.config.isVerb)) return;
+    controller.config.eoi = val ? true : false;
+    if (controller.config.isVerb) {
       arSerial->print(F("Set EOI assertion: "));
       arSerial->println(val ? "ON" : "OFF");
     };
   } else {
-    arSerial->println(AR488.eoi);
+    arSerial->println(controller.config.eoi);
   }
 }
 
 
 /***** Show or set interface to controller/device mode *****/
-void cmode_h(char *params, AR488Conf& AR488) {
+void cmode_h(char *params, Controller& controller) {
   uint16_t val;
   if (params != NULL) {
-    if (notInRange(params, 0, 1, val, AR488.isVerb)) return;
+    if (notInRange(params, 0, 1, val, controller.config.isVerb)) return;
     switch (val) {
       case 0:
-        AR488.cmode = 1;
+        controller.config.cmode = 1;
         gpib.initDevice();
         break;
       case 1:
-        AR488.cmode = 2;
+        controller.config.cmode = 2;
         gpib.initController();
         break;
     }
-    if (AR488.isVerb) {
+    if (controller.config.isVerb) {
       arSerial->print(F("Interface mode set to: "));
       arSerial->println(val ? "CONTROLLER" : "DEVICE");
     }
   } else {
-    arSerial->println(AR488.cmode - 1);
+    arSerial->println(controller.config.cmode - 1);
   }
 }
 
 
 /***** Show or enable/disable sending of end of transmission character *****/
-void eot_en_h(char *params, AR488Conf& AR488) {
+void eot_en_h(char *params, Controller& controller) {
   uint16_t val;
   if (params != NULL) {
-    if (notInRange(params, 0, 1, val, AR488.isVerb)) return;
-    AR488.eot_en = val ? true : false;
-    if (AR488.isVerb) {
+    if (notInRange(params, 0, 1, val, controller.config.isVerb)) return;
+    controller.config.eot_en = val ? true : false;
+    if (controller.config.isVerb) {
       arSerial->print(F("Appending of EOT character: "));
       arSerial->println(val ? "ON" : "OFF");
     }
   } else {
-    arSerial->println(AR488.eot_en);
+    arSerial->println(controller.config.eot_en);
   }
 }
 
 
 /***** Show or set end of transmission character *****/
-void eot_char_h(char *params, AR488Conf& AR488) {
+void eot_char_h(char *params, Controller& controller) {
   uint16_t val;
   if (params != NULL) {
-    if (notInRange(params, 0, 255, val, AR488.isVerb)) return;
-    AR488.eot_ch = (uint8_t)val;
-    if (AR488.isVerb) {
+    if (notInRange(params, 0, 255, val, controller.config.isVerb)) return;
+    controller.config.eot_ch = (uint8_t)val;
+    if (controller.config.isVerb) {
       arSerial->print(F("EOT set to ASCII character: "));
       arSerial->println(val);
     };
   } else {
-    arSerial->println(AR488.eot_ch, DEC);
+    arSerial->println(controller.config.eot_ch, DEC);
   }
 }
 
 
 /***** Show or enable/disable auto mode *****/
-void amode_h(char *params, AR488Conf& AR488) {
+void amode_h(char *params, Controller& controller) {
   uint16_t val;
   if (params != NULL) {
-    if (notInRange(params, 0, 3, val, AR488.isVerb)) return;
-    if (val > 0 && AR488.isVerb) {
+    if (notInRange(params, 0, 3, val, controller.config.isVerb)) return;
+    if (val > 0 && controller.config.isVerb) {
       arSerial->println(F("WARNING: automode ON can cause some devices to generate"));
       arSerial->println(F("         'addressed to talk but nothing to say' errors"));
     }
-    AR488.amode = (uint8_t)val;
-    if (AR488.amode < 3) controller.aRead = false;
-    if (AR488.isVerb) {
+    controller.config.amode = (uint8_t)val;
+    if (controller.config.amode < 3) controller.aRead = false;
+    if (controller.config.isVerb) {
       arSerial->print(F("Auto mode: "));
-      arSerial->println(AR488.amode);
+      arSerial->println(controller.config.amode);
     }
   } else {
-    arSerial->println(AR488.amode);
+    arSerial->println(controller.config.amode);
   }
 }
 
 
 /***** Display the controller version string *****/
-void ver_h(char *params, AR488Conf& AR488) {
+void ver_h(char *params, Controller& controller) {
   // If "real" requested
   if (params != NULL && strncmp(params, "real", 3) == 0) {
     arSerial->println(F(FWVER));
     // Otherwise depends on whether we have a custom string set
   } else {
-    if (strlen(AR488.vstr) > 0) {
-      arSerial->println(AR488.vstr);
+    if (strlen(controller.config.vstr) > 0) {
+      arSerial->println(controller.config.vstr);
     } else {
       arSerial->println(F(FWVER));
     }
@@ -353,14 +350,14 @@ void ver_h(char *params, AR488Conf& AR488) {
 
 
 /***** Address device to talk and read the sent data *****/
-void read_h(char *params, AR488Conf& AR488) {
+void read_h(char *params, Controller& controller) {
   // Clear read flags
   gpib.rEoi = false;
   gpib.rEbt = false;
   // Read any parameters
   if (params != NULL) {
     if (strlen(params) > 3) {
-      if (AR488.isVerb) arSerial->println(F("Invalid termination character - ignored!"));
+      if (controller.config.isVerb) arSerial->println(F("Invalid termination character - ignored!"));
     } else if (strncmp(params, "eoi", 3) == 0) { // Read with eoi detection
       gpib.rEoi = true;
     } else { // Assume ASCII character given and convert to an 8 bit byte
@@ -368,7 +365,7 @@ void read_h(char *params, AR488Conf& AR488) {
       gpib.eByte = atoi(params);
     }
   }
-  if (AR488.amode == 3) {
+  if (controller.config.amode == 3) {
     // In auto continuous mode we set this flag to indicate we are ready for continuous read
     controller.aRead = true;
   } else {
@@ -379,17 +376,17 @@ void read_h(char *params, AR488Conf& AR488) {
 
 
 /***** Send device clear (usually resets the device to power on state) *****/
-void clr_h(char *params, AR488Conf& AR488) {
-  if (gpib.addrDev(AR488.paddr, 0)) {
-    if (AR488.isVerb) arSerial->println(F("Failed to address device"));
+void clr_h(char *params, Controller& controller) {
+  if (gpib.addrDev(controller.config.paddr, 0)) {
+    if (controller.config.isVerb) arSerial->println(F("Failed to address device"));
     return;
   }
   if (gpib.gpibSendCmd(GC_SDC))  {
-    if (AR488.isVerb) arSerial->println(F("Failed to send SDC"));
+    if (controller.config.isVerb) arSerial->println(F("Failed to send SDC"));
     return;
   }
   if (gpib.uaddrDev()) {
-    if (AR488.isVerb) arSerial->println(F("Failed to untalk GPIB bus"));
+    if (controller.config.isVerb) arSerial->println(F("Failed to untalk GPIB bus"));
     return;
   }
   // Set GPIB controls back to idle state
@@ -398,30 +395,30 @@ void clr_h(char *params, AR488Conf& AR488) {
 
 
 /***** Send local lockout command *****/
-void llo_h(char *params, AR488Conf& AR488) {
+void llo_h(char *params, Controller& controller) {
   // NOTE: REN *MUST* be asserted (LOW)
   if (digitalRead(REN)==LOW) {
     // For 'all' send LLO to the bus without addressing any device - devices will show REM
     if (params != NULL) {
       if (0 == strncmp(params, "all", 3)) {
         if (gpib.gpibSendCmd(GC_LLO)) {
-          if (AR488.isVerb) arSerial->println(F("Failed to send universal LLO."));
+          if (controller.config.isVerb) arSerial->println(F("Failed to send universal LLO."));
         }
       }
     } else {
       // Address current device
-      if (gpib.addrDev(AR488.paddr, 0)) {
-        if (AR488.isVerb) arSerial->println(F("Failed to address the device."));
+      if (gpib.addrDev(controller.config.paddr, 0)) {
+        if (controller.config.isVerb) arSerial->println(F("Failed to address the device."));
         return;
       }
       // Send LLO to currently addressed device
       if (gpib.gpibSendCmd(GC_LLO)) {
-        if (AR488.isVerb) arSerial->println(F("Failed to send LLO to device"));
+        if (controller.config.isVerb) arSerial->println(F("Failed to send LLO to device"));
         return;
       }
       // Unlisten bus
       if (gpib.uaddrDev()) {
-        if (AR488.isVerb) arSerial->println(F("Failed to unlisten the GPIB bus"));
+        if (controller.config.isVerb) arSerial->println(F("Failed to unlisten the GPIB bus"));
         return;
       }
     }
@@ -432,7 +429,7 @@ void llo_h(char *params, AR488Conf& AR488) {
 
 
 /***** Send Go To Local (GTL) command *****/
-void loc_h(char *params, AR488Conf& AR488) {
+void loc_h(char *params, Controller& controller) {
   // REN *MUST* be asserted (LOW)
   if (digitalRead(REN)==LOW) {
     if (params != NULL) {
@@ -448,18 +445,18 @@ void loc_h(char *params, AR488Conf& AR488) {
       }
     } else {
       // Address device to listen
-      if (gpib.addrDev(AR488.paddr, 0)) {
-        if (AR488.isVerb) arSerial->println(F("Failed to address device."));
+      if (gpib.addrDev(controller.config.paddr, 0)) {
+        if (controller.config.isVerb) arSerial->println(F("Failed to address device."));
         return;
       }
       // Send GTL
       if (gpib.gpibSendCmd(GC_GTL)) {
-        if (AR488.isVerb) arSerial->println(F("Failed sending LOC."));
+        if (controller.config.isVerb) arSerial->println(F("Failed sending LOC."));
         return;
       }
       // Unlisten bus
       if (gpib.uaddrDev()) {
-        if (AR488.isVerb) arSerial->println(F("Failed to unlisten GPIB bus."));
+        if (controller.config.isVerb) arSerial->println(F("Failed to unlisten GPIB bus."));
         return;
       }
       // Set GPIB controls back to idle state
@@ -474,13 +471,13 @@ void loc_h(char *params, AR488Conf& AR488) {
  * the bus and causes all interfaces to return to their idle
  * state
  */
-void ifc_h(char *params, AR488Conf& AR488) {
+void ifc_h(char *params, Controller& controller) {
   gpib.assertIfc();
 }
 
 
 /***** Send a trigger command *****/
-void trg_h(char *params, AR488Conf& AR488) {
+void trg_h(char *params, Controller& controller) {
   char *param;
   uint8_t addrs[15];
   uint16_t val = 0;
@@ -494,7 +491,7 @@ void trg_h(char *params, AR488Conf& AR488) {
   // Read parameters
   if (params == NULL) {
     // No parameters - trigger addressed device only
-    addrs[0] = AR488.paddr;
+    addrs[0] = controller.config.paddr;
     cnt++;
   } else {
     // Read address parameters into array
@@ -504,7 +501,7 @@ void trg_h(char *params, AR488Conf& AR488) {
       } else {
         param = strtok(NULL, " \t");
       }
-      if (notInRange(param, 1, 30, val, AR488.isVerb)) return;
+      if (notInRange(param, 1, 30, val, controller.config.isVerb)) return;
       addrs[cnt] = (uint8_t)val;
       cnt++;
     }
@@ -515,17 +512,17 @@ void trg_h(char *params, AR488Conf& AR488) {
     for (int i = 0; i < cnt; i++) {
       // Address the device
       if (gpib.addrDev(addrs[i], 0)) {
-        if (AR488.isVerb) arSerial->println(F("Failed to address device"));
+        if (controller.config.isVerb) arSerial->println(F("Failed to address device"));
         return;
       }
       // Send GTL
       if (gpib.gpibSendCmd(GC_GET))  {
-        if (AR488.isVerb) arSerial->println(F("Failed to trigger device"));
+        if (controller.config.isVerb) arSerial->println(F("Failed to trigger device"));
         return;
       }
       // Unaddress device
       if (gpib.uaddrDev()) {
-        if (AR488.isVerb) arSerial->println(F("Failed to unlisten GPIB bus"));
+        if (controller.config.isVerb) arSerial->println(F("Failed to unlisten GPIB bus"));
         return;
       }
     }
@@ -533,7 +530,7 @@ void trg_h(char *params, AR488Conf& AR488) {
     // Set GPIB controls back to idle state
     gpib.setGpibControls(CIDS);
 
-    if (AR488.isVerb) arSerial->println(F("Group trigger completed."));
+    if (controller.config.isVerb) arSerial->println(F("Group trigger completed."));
   }
 }
 
@@ -546,13 +543,13 @@ void trg_h(char *params, AR488Conf& AR488) {
  * and will not reset a crashed MCU, but it will re-start
  * the interface program and re-initialise all parameters.
  */
-void rst_h(char *params, AR488Conf& AR488) {
+void rst_h(char *params, Controller& controller) {
   controller.reset();
 }
 
 
 /***** Serial Poll Handler *****/
-void spoll_h(char *params, AR488Conf& AR488) {
+void spoll_h(char *params, Controller& controller) {
   char *param;
   uint8_t addrs[15];
   uint8_t sb = 0;
@@ -571,7 +568,7 @@ void spoll_h(char *params, AR488Conf& AR488) {
   // Read parameters
   if (params == NULL) {
     // No parameters - trigger addressed device only
-    addrs[0] = AR488.paddr;
+    addrs[0] = controller.config.paddr;
     j = 1;
   } else {
     // Read address parameters into array
@@ -585,16 +582,16 @@ void spoll_h(char *params, AR488Conf& AR488) {
       if (strncmp(param, "all", 3) == 0) {
         all = true;
         j = 30;
-        if (AR488.isVerb) arSerial->println(F("Serial poll of all devices requested..."));
+        if (controller.config.isVerb) arSerial->println(F("Serial poll of all devices requested..."));
         break;
         // Read all address parameters
       } else if (strlen(params) < 3) { // No more than 2 characters
-        if (notInRange(param, 1, 30, val, AR488.isVerb)) return;
+        if (notInRange(param, 1, 30, val, controller.config.isVerb)) return;
         addrs[j] = (uint8_t)val;
         j++;
       } else {
         errBadCmd();
-        if (AR488.isVerb) arSerial->println(F("Invalid parameter"));
+        if (controller.config.isVerb) arSerial->println(F("Invalid parameter"));
         return;
       }
     }
@@ -609,7 +606,7 @@ void spoll_h(char *params, AR488Conf& AR488) {
   }
 
   // Controller addresses itself as listner
-  if ( gpib.gpibSendCmd(GC_LAD + AR488.caddr) )  {
+  if ( gpib.gpibSendCmd(GC_LAD + controller.config.caddr) )  {
 #ifdef DEBUG4
     dbSerial->println(F("spoll_h: failed to send LAD"));
 #endif
@@ -635,7 +632,7 @@ void spoll_h(char *params, AR488Conf& AR488) {
     }
 
     // Don't need to poll own address
-    if (val != AR488.caddr) {
+    if (val != controller.config.caddr) {
 
       // Address a device to talk
       if ( gpib.gpibSendCmd(GC_TAD + val) )  {
@@ -664,7 +661,7 @@ void spoll_h(char *params, AR488Conf& AR488) {
         } else {
           // Return decimal number representing status byte
           arSerial->println(sb, DEC);
-          if (AR488.isVerb) {
+          if (controller.config.isVerb) {
             arSerial->print(F("Received status byte ["));
             arSerial->print(sb);
             arSerial->print(F("] from device at address: "));
@@ -673,7 +670,7 @@ void spoll_h(char *params, AR488Conf& AR488) {
           i = j;
         }
       } else {
-        if (AR488.isVerb) arSerial->println(F("Failed to retrieve status byte"));
+        if (controller.config.isVerb) arSerial->println(F("Failed to retrieve status byte"));
       }
     }
   }
@@ -710,46 +707,46 @@ void spoll_h(char *params, AR488Conf& AR488) {
   // still asserted, then another device may be requesting service so another
   // serial poll will be called from the main loop
   gpib.setSRQ(digitalRead(SRQ) == LOW);
-  if (AR488.isVerb) arSerial->println(F("Serial poll completed."));
+  if (controller.config.isVerb) arSerial->println(F("Serial poll completed."));
 
 }
 
 
 /***** Return status of SRQ line *****/
-void srq_h(char *params, AR488Conf& AR488) {
+void srq_h(char *params, Controller& controller) {
   //NOTE: LOW=asserted, HIGH=unasserted
   arSerial->println(!digitalRead(SRQ));
 }
 
 
 /***** Set the status byte (device mode) *****/
-void stat_h(char *params, AR488Conf& AR488) {
+void stat_h(char *params, Controller& controller) {
   uint16_t val = 0;
   // A parameter given?
   if (params != NULL) {
     // Byte value given?
-    if (notInRange(params, 0, 255, val, AR488.isVerb)) return;
-    AR488.stat = (uint8_t)val;
+    if (notInRange(params, 0, 255, val, controller.config.isVerb)) return;
+    controller.config.stat = (uint8_t)val;
     if (val & 0x40) {
       setSrqSig();
-      if (AR488.isVerb) arSerial->println(F("SRQ asserted."));
+      if (controller.config.isVerb) arSerial->println(F("SRQ asserted."));
     } else {
       clrSrqSig();
-      if (AR488.isVerb) arSerial->println(F("SRQ un-asserted."));
+      if (controller.config.isVerb) arSerial->println(F("SRQ un-asserted."));
     }
   } else {
     // Return the currently set status byte
-    arSerial->println(AR488.stat);
+    arSerial->println(controller.config.stat);
   }
 }
 
 
 /***** Save controller configuration *****/
-void save_h(char *params, AR488Conf& AR488) {
+void save_h(char *params, Controller& controller) {
 #ifdef E2END
-  uint8_t *conf = (uint8_t*) &AR488;
+  uint8_t *conf = (uint8_t*) &(controller.config);
   epWriteData(conf, AR_CFG_SIZE);
-  if (AR488.isVerb) arSerial->println(F("Settings saved."));
+  if (controller.config.isVerb) arSerial->println(F("Settings saved."));
 #else
   arSerial->println(F("EEPROM not supported."));
 #endif
@@ -757,13 +754,13 @@ void save_h(char *params, AR488Conf& AR488) {
 
 
 /***** Show state or enable/disable listen only mode *****/
-void lon_h(char *params, AR488Conf& AR488) {
+void lon_h(char *params, Controller& controller) {
   uint16_t val;
   if (params != NULL) {
-    if (notInRange(params, 0, 1, val, AR488.isVerb)) return;
+    if (notInRange(params, 0, 1, val, controller.config.isVerb)) return;
     controller.isRO = val ? true : false;
     if (controller.isTO) controller.isTO = false; // Talk-only mode must be disabled!
-    if (AR488.isVerb) {
+    if (controller.config.isVerb) {
       arSerial->print(F("LON: "));
       arSerial->println(val ? "ON" : "OFF") ;
     }
@@ -799,8 +796,8 @@ void clrSrqSig() {
  * Polls all devices, not just the currently addressed instrument
  * This is an alias wrapper for ++spoll all
  */
-void aspoll_h(char *params, AR488Conf& AR488) {
-  spoll_h((char*)"all", AR488);
+void aspoll_h(char *params, Controller& controller) {
+  spoll_h((char*)"all", controller);
 }
 
 
@@ -808,9 +805,9 @@ void aspoll_h(char *params, AR488Conf& AR488) {
 /*
  * The universal Device Clear (DCL) is unaddressed and affects all devices on the Gpib bus.
  */
-void dcl_h(char *params, AR488Conf& AR488) {
+void dcl_h(char *params, Controller& controller) {
   if ( gpib.gpibSendCmd(GC_DCL) )  {
-    if (AR488.isVerb) arSerial->println(F("Sending DCL failed"));
+    if (controller.config.isVerb) arSerial->println(F("Sending DCL failed"));
     return;
   }
   // Set GPIB controls back to idle state
@@ -819,24 +816,24 @@ void dcl_h(char *params, AR488Conf& AR488) {
 
 
 /***** Re-load default configuration *****/
-void default_h(char *params, AR488Conf& AR488) {
-  initAR488();
+void default_h(char *params, Controller& controller) {
+  controller.initConfig();
 }
 
 
 /***** Show or set end of receive character(s) *****/
-void eor_h(char *params, AR488Conf& AR488) {
+void eor_h(char *params, Controller& controller) {
   uint16_t val;
   if (params != NULL) {
-    if (notInRange(params, 0, 15, val, AR488.isVerb)) return;
-    AR488.eor = (uint8_t)val;
-    if (AR488.isVerb) {
+    if (notInRange(params, 0, 15, val, controller.config.isVerb)) return;
+    controller.config.eor = (uint8_t)val;
+    if (controller.config.isVerb) {
       arSerial->print(F("Set EOR to: "));
       arSerial->println(val);
     };
   } else {
-    if (AR488.eor>7) AR488.eor = 0;  // Needed to reset FF read from EEPROM after FW upgrade
-    arSerial->println(AR488.eor);
+    if (controller.config.eor>7) controller.config.eor = 0;  // Needed to reset FF read from EEPROM after FW upgrade
+    arSerial->println(controller.config.eor);
   }
 }
 
@@ -845,7 +842,7 @@ void eor_h(char *params, AR488Conf& AR488) {
 /*
  * Device must be set to respond on DIO line 1 - 8
  */
-void ppoll_h(char *params, AR488Conf& AR488) {
+void ppoll_h(char *params, Controller& controller) {
   uint8_t sb = 0;
 
   // Poll devices
@@ -864,12 +861,12 @@ void ppoll_h(char *params, AR488Conf& AR488) {
   // Output the response byte
   arSerial->println(sb, DEC);
 
-  if (AR488.isVerb) arSerial->println(F("Parallel poll completed."));
+  if (controller.config.isVerb) arSerial->println(F("Parallel poll completed."));
 }
 
 
 /***** Assert or de-assert REN 0=de-assert; 1=assert *****/
-void ren_h(char *params, AR488Conf& AR488) {
+void ren_h(char *params, Controller& controller) {
 #if defined (SN7516X) && not defined (SN7516X_DC)
   params = params;
   arSerial->println(F("Unavailable")) ;
@@ -877,9 +874,9 @@ void ren_h(char *params, AR488Conf& AR488) {
   // char *stat;
   uint16_t val;
   if (params != NULL) {
-    if (notInRange(params, 0, 1, val, AR488.isVerb)) return;
+    if (notInRange(params, 0, 1, val, controller.config.isVerb)) return;
     digitalWrite(REN, (val ? LOW : HIGH));
-    if (AR488.isVerb) {
+    if (controller.config.isVerb) {
       arSerial->print(F("REN: "));
       arSerial->println(val ? "REN asserted" : "REN un-asserted") ;
     };
@@ -891,10 +888,10 @@ void ren_h(char *params, AR488Conf& AR488) {
 
 
 /***** Enable verbose mode 0=OFF; 1=ON *****/
-void verb_h(char *params, AR488Conf& AR488) {
-  AR488.isVerb = !AR488.isVerb;
+void verb_h(char *params, Controller& controller) {
+  controller.config.isVerb = !controller.config.isVerb;
   arSerial->print("Verbose: ");
-  arSerial->println(AR488.isVerb ? "ON" : "OFF");
+  arSerial->println(controller.config.isVerb ? "ON" : "OFF");
 }
 
 
@@ -902,7 +899,7 @@ void verb_h(char *params, AR488Conf& AR488) {
 /* Replace the standard AR488 version string with something else
  *  NOTE: some instrument software requires a sepcific version string to ID the interface
  */
-void setvstr_h(char *params, AR488Conf& AR488) {
+void setvstr_h(char *params, Controller& controller) {
   uint8_t plen;
   char idparams[64];
   plen = strlen(params);
@@ -919,15 +916,15 @@ arSerial->print(F("IdParams: "));
 arSerial->println(idparams);
 */
 
-  id_h(idparams, AR488);
+  id_h(idparams, controller);
 
 /*
   if (params != NULL) {
     len = strlen(params);
     if (len>47) len=47; // Ignore anything over 47 characters
-    memset(AR488.vstr, '\0', 48);
-    strncpy(AR488.vstr, params, len);
-    if (AR488.isVerb) {
+    memset(controller.config.vstr, '\0', 48);
+    strncpy(controller.config.vstr, params, len);
+    if (controller.config.isVerb) {
       arSerial->print(F("Changed version string to: "));
       arSerial->println(params);
     };
@@ -937,13 +934,13 @@ arSerial->println(idparams);
 
 
 /***** Talk only mode *****/
-void ton_h(char *params, AR488Conf& AR488) {
+void ton_h(char *params, Controller& controller) {
   uint16_t val;
   if (params != NULL) {
-    if (notInRange(params, 0, 1, val, AR488.isVerb)) return;
+    if (notInRange(params, 0, 1, val, controller.config.isVerb)) return;
     controller.isTO = val ? true : false;
     if (controller.isTO) controller.isRO = false; // Read-only mode must be disabled in TO mode!
-    if (AR488.isVerb) {
+    if (controller.config.isVerb) {
       arSerial->print(F("TON: "));
       arSerial->println(val ? "ON" : "OFF") ;
     }
@@ -962,10 +959,10 @@ void ton_h(char *params, AR488Conf& AR488) {
  * an ++spoll command needs to be given manually to return
  * the status byte.
  */
-void srqa_h(char *params, AR488Conf& AR488) {
+void srqa_h(char *params, Controller& controller) {
   uint16_t val;
   if (params != NULL) {
-    if (notInRange(params, 0, 1, val, AR488.isVerb)) return;
+    if (notInRange(params, 0, 1, val, controller.config.isVerb)) return;
     switch (val) {
       case 0:
         controller.isSrqa = false;
@@ -974,7 +971,7 @@ void srqa_h(char *params, AR488Conf& AR488) {
         controller.isSrqa = true;
         break;
     }
-    if (AR488.isVerb) arSerial->println(controller.isSrqa ? "SRQ auto ON" : "SRQ auto OFF") ;
+    if (controller.config.isVerb) arSerial->println(controller.isSrqa ? "SRQ auto ON" : "SRQ auto OFF") ;
   } else {
     arSerial->println(controller.isSrqa);
   }
@@ -982,7 +979,7 @@ void srqa_h(char *params, AR488Conf& AR488) {
 
 
 /***** Repeat a given command and return result *****/
-void repeat_h(char *params, AR488Conf& AR488) {
+void repeat_h(char *params, Controller& controller) {
 
   uint16_t count;
   uint16_t tmdly;
@@ -992,12 +989,12 @@ void repeat_h(char *params, AR488Conf& AR488) {
     // Count (number of repetitions)
     param = strtok(params, " \t");
     if (strlen(param) > 0) {
-      if (notInRange(param, 2, 255, count, AR488.isVerb)) return;
+      if (notInRange(param, 2, 255, count, controller.config.isVerb)) return;
     }
     // Time delay (milliseconds)
     param = strtok(NULL, " \t");
     if (strlen(param) > 0) {
-      if (notInRange(param, 0, 30000, tmdly, AR488.isVerb)) return;
+      if (notInRange(param, 0, 30000, tmdly, controller.config.isVerb)) return;
     }
 
     // Pointer to remainder of parameters string
@@ -1011,25 +1008,25 @@ void repeat_h(char *params, AR488Conf& AR488) {
       }
     } else {
       errBadCmd();
-      if (AR488.isVerb) arSerial->println(F("Missing parameter"));
+      if (controller.config.isVerb) arSerial->println(F("Missing parameter"));
       return;
     }
   } else {
     errBadCmd();
-    if (AR488.isVerb) arSerial->println(F("Missing parameters"));
+    if (controller.config.isVerb) arSerial->println(F("Missing parameters"));
   }
 
 }
 
 
 /***** Run a macro *****/
-void macro_h(char *params, AR488Conf& AR488) {
+void macro_h(char *params, Controller& controller) {
 #ifdef USE_MACROS
   uint16_t val;
   const char * macro;
 
   if (params != NULL) {
-    if (notInRange(params, 0, 9, val, AR488.isVerb)) return;
+    if (notInRange(params, 0, 9, val, controller.config.isVerb)) return;
     //    execMacro((uint8_t)val);
     controller.runMacro = (uint8_t)val;
   } else {
@@ -1057,7 +1054,7 @@ void macro_h(char *params, AR488Conf& AR488) {
  * byte: byte to write on the bus
  * Note: values to switch individual bits = 1,2,4,8,10,20,40,80
  */
-void xdiag_h(char *params, AR488Conf& AR488){
+void xdiag_h(char *params, Controller& controller){
   char *param;
   uint8_t mode = 0;
   uint8_t val = 0;
@@ -1086,7 +1083,7 @@ void xdiag_h(char *params, AR488Conf& AR488){
       setGpibState(~val, 0xFF, 0);  // Set state (low=asserted so must be inverse of value)
       // Reset after 10 seconds
       delay(10000);
-      if (AR488.cmode==2) {
+      if (controller.config.cmode==2) {
         gpib.setGpibControls(CINI);
       }else{
         gpib.setGpibControls(DINI);
@@ -1105,17 +1102,17 @@ void xdiag_h(char *params, AR488Conf& AR488){
 
 /****** Timing parameters ******/
 
-void tmbus_h(char *params, AR488Conf& AR488) {
+void tmbus_h(char *params, Controller& controller) {
   uint16_t val;
   if (params != NULL) {
-    if (notInRange(params, 0, 30000, val, AR488.isVerb)) return;
-    AR488.tmbus = val;
-    if (AR488.isVerb) {
+    if (notInRange(params, 0, 30000, val, controller.config.isVerb)) return;
+    controller.config.tmbus = val;
+    if (controller.config.isVerb) {
       arSerial->print(F("TmBus set to: "));
       arSerial->println(val);
     };
   } else {
-    arSerial->println(AR488.tmbus, DEC);
+    arSerial->println(controller.config.tmbus, DEC);
   }
 }
 
@@ -1127,7 +1124,7 @@ void tmbus_h(char *params, AR488Conf& AR488) {
  * ++id name   - short name of device (e.g. HP3478A) up to 15 characters
  * ++id serial - serial number up to 9 digits long
  */
-void id_h(char *params, AR488Conf& AR488) {
+void id_h(char *params, Controller& controller) {
   uint8_t dlen = 0;
   char * keyword; // Pointer to keyword following ++id
   char * datastr; // Pointer to supplied data (remaining characters in buffer)
@@ -1154,12 +1151,12 @@ void id_h(char *params, AR488Conf& AR488) {
 #ifdef DEBUG10
         arSerial->println(F("Length OK"));
 #endif
-          memset(AR488.vstr, '\0', 48);
-          strncpy(AR488.vstr, datastr, dlen);
-          if (AR488.isVerb) arSerial->print(F("VerStr: "));
-		  arSerial->println(AR488.vstr);
+          memset(controller.config.vstr, '\0', 48);
+          strncpy(controller.config.vstr, datastr, dlen);
+          if (controller.config.isVerb) arSerial->print(F("VerStr: "));
+		  arSerial->println(controller.config.vstr);
         }else{
-          if (AR488.isVerb)
+          if (controller.config.isVerb)
 			  arSerial->println(F("Length of version string must not exceed 48 characters!"));
           errBadCmd();
         }
@@ -1167,19 +1164,19 @@ void id_h(char *params, AR488Conf& AR488) {
       }
       if (strncmp(keyword, "name", 4)==0) {
         if (dlen>0 && dlen<16) {
-          memset(AR488.sname, '\0', 16);
-          strncpy(AR488.sname, datastr, dlen);
+          memset(controller.config.sname, '\0', 16);
+          strncpy(controller.config.sname, datastr, dlen);
         }else{
-          if (AR488.isVerb) arSerial->println(F("Length of name must not exceed 15 characters!"));
+          if (controller.config.isVerb) arSerial->println(F("Length of name must not exceed 15 characters!"));
           errBadCmd();
         }
         return;
       }
       if (strncmp(keyword, "serial", 6)==0) {
         if (dlen < 10) {
-          AR488.serial = atol(datastr);
+          controller.config.serial = atol(datastr);
         }else{
-          if (AR488.isVerb) arSerial->println(F("Serial number must not exceed 9 characters!"));
+          if (controller.config.isVerb) arSerial->println(F("Serial number must not exceed 9 characters!"));
           errBadCmd();
         }
         return;
@@ -1187,16 +1184,16 @@ void id_h(char *params, AR488Conf& AR488) {
 //      errBadCmd();
     }else{
       if (strncmp(keyword, "verstr", 6)==0) {
-        arSerial->println(AR488.vstr);
+        arSerial->println(controller.config.vstr);
         return;
       }
       if (strncmp(keyword, "name", 4)==0) {
-        arSerial->println(AR488.sname);
+        arSerial->println(controller.config.sname);
         return;
       }
       if (strncmp(keyword, "serial", 6)==0) {
         memset(serialStr, '\0', 10);
-        snprintf(serialStr, 10, "%09lu", AR488.serial);  // Max str length = 10-1 i.e 9 digits + null terminator
+        snprintf(serialStr, 10, "%09lu", controller.config.serial);  // Max str length = 10-1 i.e 9 digits + null terminator
         arSerial->println(serialStr);
         return;
       }
@@ -1206,19 +1203,19 @@ void id_h(char *params, AR488Conf& AR488) {
 }
 
 
-void idn_h(char * params, AR488Conf& AR488){
+void idn_h(char * params, Controller& controller){
   uint16_t val;
   if (params != NULL) {
-    if (notInRange(params, 0, 2, val, AR488.isVerb)) return;
-    AR488.idn = (uint8_t)val;
-    if (AR488.isVerb) {
+    if (notInRange(params, 0, 2, val, controller.config.isVerb)) return;
+    controller.config.idn = (uint8_t)val;
+    if (controller.config.isVerb) {
       arSerial->print(F("Sending IDN: "));
       arSerial->print(val ? "Enabled" : "Disabled");
       if (val==2) arSerial->print(F(" with serial number"));
       arSerial->println();
     };
   } else {
-    arSerial->println(AR488.idn, DEC);
+    arSerial->println(controller.config.idn, DEC);
   }
 }
 
