@@ -16,6 +16,7 @@ public:
   void flushPbuf();
   void showPrompt();
   uint8_t serialIn_h();
+  void reset();
 
 private:
   bool verbose;
@@ -31,7 +32,6 @@ private:
 public:  // TODO: better than this...
   char pBuf[PBSIZE];
   uint8_t pbPtr = 0;
-
 
 };
 #endif

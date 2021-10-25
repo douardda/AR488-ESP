@@ -7,6 +7,8 @@
 
 extern Stream *arSerial;
 extern GPIB gpib;
+extern CommandComm comm;
+
 
 /***** Array containing index of accepted ++ commands *****/
 /*
@@ -474,14 +476,7 @@ void loc_h(char *params, AR488Conf& AR488, AR488State& AR488st) {
  * state
  */
 void ifc_h(char *params, AR488Conf& AR488, AR488State& AR488st) {
-  if (AR488.cmode==2) {
-    // Assert IFC
-    setGpibState(0b00000000, 0b00000001, 0);
-    delayMicroseconds(150);
-    // De-assert IFC
-    setGpibState(0b00000001, 0b00000001, 0);
-    if (AR488.isVerb) arSerial->println(F("IFC signal asserted for 150 microseconds"));
-  }
+  gpib.assertIfc();
 }
 
 
@@ -553,22 +548,7 @@ void trg_h(char *params, AR488Conf& AR488, AR488State& AR488st) {
  * the interface program and re-initialise all parameters.
  */
 void rst_h(char *params, AR488Conf& AR488, AR488State& AR488st) {
-#ifdef WDTO_1S
-  // Where defined, reset controller using watchdog timeout
-  unsigned long tout;
-  tout = millis() + 2000;
-  wdt_enable(WDTO_1S);
-  while (millis() < tout) {};
-  // Should never reach here....
-  if (AR488.isVerb) {
-    arSerial->println(F("Reset FAILED."));
-  };
-#else
-  // Otherwise restart program (soft reset)
-#if defined(__AVR__)
-  asm volatile ("  jmp 0");
-#endif
-#endif
+  comm.reset();
 }
 
 

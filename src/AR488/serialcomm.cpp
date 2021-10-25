@@ -252,3 +252,24 @@ uint8_t CommandComm::serialIn_h() {
 
   return bufferStatus;
 }
+
+
+void CommandComm::reset() {
+#ifdef WDTO_1S
+  // Where defined, reset controller using watchdog timeout
+  unsigned long tout;
+  tout = millis() + 2000;
+  wdt_enable(WDTO_1S);
+  while (millis() < tout) {};
+  // Should never reach here....
+  if (AR488.isVerb) {
+    arSerial->println(F("Reset FAILED."));
+  };
+#else
+  // Otherwise restart program (soft reset)
+#if defined(__AVR__)
+  asm volatile ("  jmp 0");
+#endif
+#endif
+
+}

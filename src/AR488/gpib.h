@@ -24,6 +24,7 @@ public:
 
   bool isTerminatorDetected(uint8_t bytes[3], uint8_t eor_sequence);
   bool isAtnAsserted();
+  void assertIfc();
 
   void sendToInstrument(char *buffr, uint8_t dsize);
 

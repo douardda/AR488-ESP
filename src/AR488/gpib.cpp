@@ -30,7 +30,7 @@ void GPIB::initController() {
   // Initialise GPIB data lines (sets to INPUT_PULLUP)
   readGpibDbus();
   // Assert IFC to signal controller in charge (CIC)
-  ifc_h(NULL, AR488, AR488st);
+  assertIfc();
 }
 
 /***************************************/
@@ -865,7 +865,7 @@ void GPIB::sdc_h() {
 #ifdef DEBUG5
   dbSerial->print(F("Reset adressed to me: ")); dbSerial->println(aTl);
 #endif
-  if (AR488st.aTl) rst_h(NULL, AR488, AR488st);
+  if (AR488st.aTl) comm.reset();
   if (AR488.isVerb) outstream.println(F("Reset failed."));
 }
 
@@ -964,4 +964,17 @@ void GPIB::sendToInstrument(char *buffr, uint8_t dsize) {
   dbSerial->println(F("sendToInstrument: Sent."));
 #endif
 
+}
+
+
+void GPIB::assertIfc() {
+  if (AR488.cmode==2) {
+    // Assert IFC
+    setGpibState(0b00000000, 0b00000001, 0);
+    delayMicroseconds(150);
+    // De-assert IFC
+    setGpibState(0b00000001, 0b00000001, 0);
+    if (AR488.isVerb)
+	  outstream.println(F("IFC signal asserted for 150 microseconds"));
+  }
 }
