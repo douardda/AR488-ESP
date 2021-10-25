@@ -95,7 +95,6 @@ typedef struct {
 
 
 typedef struct {
-  uint8_t cstate = 0; // GPIB control state
   uint8_t lnRdy = 0; // CR/LF terminated line ready to process
   // GPIB data receive flags
   //bool isReading = false; // Is a GPIB read in progress?

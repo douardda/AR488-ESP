@@ -721,7 +721,7 @@ void GPIB::setGpibControls(uint8_t state) {
   }
 
   // Save state
-  AR488st.cstate = state;
+  cstate = state;
 
   // GPIB bus delay (to allow state to settle)
   delayMicroseconds(AR488.tmbus);

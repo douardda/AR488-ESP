@@ -53,6 +53,8 @@ private:
 
   //
   bool deviceAddressing = true;
+  uint8_t cstate = 0; // GPIB control state
+
 };
 
 
