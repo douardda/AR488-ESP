@@ -55,6 +55,8 @@ private:
   bool deviceAddressing = true;
   uint8_t cstate = 0;     // GPIB control state
   uint8_t tranBrk = 0;    // Transmission break on 1=++, 2=EOI, 3=ATN 4=UNL
+  bool aTt = false;       // currently unused
+  bool aTl = false;       // currently unused
 
 public:  // TODO: fix this
   bool rEoi = false;      // Read eoi requested

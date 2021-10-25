@@ -95,12 +95,6 @@ typedef struct {
 
 
 typedef struct {
-  // GPIB data receive flags
-  //bool isReading = false; // Is a GPIB read in progress?
-  // GPIB command parser
-  bool aTt = false;
-  bool aTl = false;
-  // Data send mode flags
   // State flags set by interrupt being triggered
   volatile bool isATN = false;  // has ATN been asserted?
   volatile bool isSRQ = false;  // has SRQ been asserted?

@@ -865,7 +865,7 @@ void GPIB::sdc_h() {
 #ifdef DEBUG5
   dbSerial->print(F("Reset adressed to me: ")); dbSerial->println(aTl);
 #endif
-  if (AR488st.aTl) comm.reset();
+  if (aTl) comm.reset();
   if (AR488.isVerb) outstream.println(F("Reset failed."));
 }
 
