@@ -189,8 +189,8 @@ Stream *dbSerial = (Stream*) dbSerial_;
 
 /****** Global variables with volatile values related to controller state *****/
 AR488Conf AR488;
-CommandComm comm(*arSerial, AR488);
-GPIB gpib(*arSerial, AR488, comm);
+Controller controller(*arSerial, AR488);
+GPIB gpib(*arSerial, AR488, controller);
 
 /***** ^^^^^^^^^^^^^^^^^^^^^^^^ *****/
 /***** COMMON VARIABLES SECTION *****/
@@ -222,7 +222,7 @@ void setup() {
 #endif
 
   // Initialise parse buffer
-  comm.flushPbuf();
+  controller.flushPbuf();
 
 // Initialise debug port
 #ifdef DB_SERIAL_PORT
@@ -337,9 +337,9 @@ void loop() {
  */
 #ifdef USE_MACROS
   // Run user macro if flagged
-  if (comm.runMacro > 0) {
-    execMacro(comm.runMacro);
-    comm.runMacro = 0;
+  if (controller.runMacro > 0) {
+    execMacro(controller.runMacro);
+    controller.runMacro = 0;
   }
 #endif
 
@@ -366,15 +366,15 @@ void loop() {
  */
 
   // lnRdy=1: received a command so execute it...
-  if (comm.lnRdy == 1) {
-		execCmd(comm.pBuf, comm.pbPtr, AR488, comm);
+  if (controller.lnRdy == 1) {
+    execCmd(controller.pBuf, controller.pbPtr, AR488, controller);
   }
 
   // Controller mode:
   if (AR488.cmode == 2) {
     // lnRdy=2: received data - send it to the instrument...
-    if (comm.lnRdy == 2) {
-      gpib.sendToInstrument(comm.pBuf, comm.pbPtr);
+    if (controller.lnRdy == 2) {
+      gpib.sendToInstrument(controller.pBuf, controller.pbPtr);
       // Auto-read data from GPIB bus following any command
       if (AR488.amode == 1) {
         //        delay(10);
@@ -389,24 +389,24 @@ void loop() {
     }
 
     // Check status of SRQ and SPOLL if asserted
-    if (gpib.isSRQ() && comm.isSrqa) {
+    if (gpib.isSRQ() && controller.isSrqa) {
 			spoll_h(NULL, AR488);
       gpib.clearSRQ();
     }
 
     // Continuous auto-receive data from GPIB bus
-    if (AR488.amode == 3 && comm.aRead) gpib.gpibReceiveData();
+    if (AR488.amode == 3 && controller.aRead) gpib.gpibReceiveData();
   }
 
   // Device mode:
   if (AR488.cmode == 1) {
-    if (comm.isTO) {
-      if (comm.lnRdy == 2) gpib.sendToInstrument(comm.pBuf, comm.pbPtr);
-    }else if (comm.isRO) {
+    if (controller.isTO) {
+      if (controller.lnRdy == 2) gpib.sendToInstrument(controller.pBuf, controller.pbPtr);
+    }else if (controller.isRO) {
       gpib.lonMode();
     }else{
 			if (gpib.isATN()) gpib.attnRequired();
-      if (comm.lnRdy == 2) gpib.sendToInstrument(comm.pBuf, comm.pbPtr);
+      if (controller.lnRdy == 2) gpib.sendToInstrument(controller.pBuf, controller.pbPtr);
     }
   }
 
@@ -414,18 +414,18 @@ void loop() {
 //  lnRdy = 0;
 
   // IDN query ?
-  if (comm.sendIdn) {
+  if (controller.sendIdn) {
     if (AR488.idn==1) arSerial->println(AR488.sname);
     if (AR488.idn==2) {
 				arSerial->print(AR488.sname);
 				arSerial->print("-");
 				arSerial->println(AR488.serial);
 		}
-    comm.sendIdn = false;
+    controller.sendIdn = false;
   }
 
   // Check serial buffer
-  comm.serialIn_h();
+  controller.serialIn_h();
 
   delayMicroseconds(5);
 }
@@ -474,17 +474,17 @@ void execMacro(uint8_t idx) {
           addPbuf(c);
         }else{
           // Buffer full - clear and exit
-          comm.flushPbuf();
+          controller.flushPbuf();
           return;
         }
       }
       if (isCmd(pBuf)){
-				execCmd(comm.pBuf, comm.strlen(pBuf), AR488, comm);
+				execCmd(controller.pBuf, strlen(controller.pBuf), AR488, controller);
       }else{
-        gpib.sendToInstrument(pBuf, strlen(pBuf));
+        gpib.sendToInstrument(controller.pBuf, strlen(controller.pBuf));
       }
       // Done - clear the buffer
-      comm.flushPbuf();
+      controller.flushPbuf();
     } else {
       // Check buffer and add character
       if (pbPtr < (PBSIZE - 2)) {
@@ -498,6 +498,6 @@ void execMacro(uint8_t idx) {
   }
 
   // Clear the buffer ready for serial input
-  comm.flushPbuf();
+  controller.flushPbuf();
 }
 #endif

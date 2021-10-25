@@ -4,10 +4,10 @@
 #include "commands.h"
 
 
-GPIB::GPIB(Stream& stream, AR488Conf& conf, CommandComm& comm):
+GPIB::GPIB(Stream& stream, AR488Conf& conf, Controller& controller):
 		outstream(stream),
 		AR488(conf),
-		comm(comm),
+		controller(controller),
 		verbose(false)
 {
 }
@@ -79,7 +79,7 @@ void GPIB::gpibSendData(char *data, uint8_t dsize) {
   bool err = false;
 
   // If lon is turned on we cannot send data so exit
-  if (comm.isRO) return;
+  if (controller.isRO) return;
 
   // Controler can unlisten bus and address devices
   if (AR488.cmode == 2) {
@@ -96,7 +96,7 @@ void GPIB::gpibSendData(char *data, uint8_t dsize) {
       }
     }
 
-    deviceAddressing = comm.dataBufferFull ? false : true;
+    deviceAddressing = controller.dataBufferFull ? false : true;
 
 #ifdef DEBUG3
     dbSerial->println(F("Device addressed."));
@@ -152,7 +152,7 @@ void GPIB::gpibSendData(char *data, uint8_t dsize) {
   }
 
   // If EOI enabled and no more data to follow then assert EOI
-  if (AR488.eoi && !comm.dataBufferFull) {
+  if (AR488.eoi && !controller.dataBufferFull) {
     setGpibState(0b00000000, 0b00010000, 0);
     //    setGpibState(0b00010000, 0b00000000, 0b00010000);
     delayMicroseconds(40);
@@ -263,11 +263,11 @@ bool GPIB::gpibReceiveData() {
     r = gpibReadByte(&bytes[0], &eoiDetected);
 
     // When reading with amode=3 or EOI check serial input and break loop if neccessary
-    if ((AR488.amode==3) || rEoi) comm.serialIn_h();
+    if ((AR488.amode==3) || rEoi) controller.serialIn_h();
 
     // Line terminator detected (loop breaks on command being detected or data buffer full)
-    if (comm.lnRdy > 0) {
-      comm.aRead = false;  // Stop auto read
+    if (controller.lnRdy > 0) {
+      controller.aRead = false;  // Stop auto read
       break;
     }
 
@@ -853,7 +853,7 @@ void GPIB::mla_h(){
 
 /***** Device is addressed to talk - so send data *****/
 void GPIB::mta_h(){
-  if (comm.lnRdy == 2) sendToInstrument(comm.pBuf, comm.pbPtr);
+  if (controller.lnRdy == 2) sendToInstrument(controller.pBuf, controller.pbPtr);
 }
 
 
@@ -864,7 +864,7 @@ void GPIB::sdc_h() {
 #ifdef DEBUG5
   dbSerial->print(F("Reset adressed to me: ")); dbSerial->println(aTl);
 #endif
-  if (aTl) comm.reset();
+  if (aTl) controller.reset();
   if (AR488.isVerb) outstream.println(F("Reset failed."));
 }
 
@@ -913,7 +913,7 @@ void GPIB::lonMode(){
   gpibReceiveData();
 
   // Clear the buffer to prevent it getting blocked
-  if (comm.lnRdy==2) comm.flushPbuf();
+  if (controller.lnRdy==2) controller.flushPbuf();
 
 }
 
@@ -948,13 +948,13 @@ void GPIB::sendToInstrument(char *buffr, uint8_t dsize) {
   // Send string to instrument
   gpibSendData(buffr, dsize);
   // Clear data buffer full flag
-  if (comm.dataBufferFull) comm.dataBufferFull = false;
+  if (controller.dataBufferFull) controller.dataBufferFull = false;
 
   // Show a prompt on completion?
-  if (AR488.isVerb) comm.showPrompt();
+  if (AR488.isVerb) controller.showPrompt();
 
   // Flush the parse buffer
-  comm.flushPbuf();
+  controller.flushPbuf();
 
 #ifdef DEBUG1
   dbSerial->println(F("sendToInstrument: Sent."));

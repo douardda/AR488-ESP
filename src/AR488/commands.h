@@ -12,7 +12,7 @@ struct cmdRec {
 };
 
 void getCmd(char *buffr, AR488Conf& AR488);
-void execCmd(char *buffr, uint8_t dsize, AR488Conf& AR488, CommandComm& comm);
+void execCmd(char *buffr, uint8_t dsize, AR488Conf& AR488, Controller& controller);
 
 bool notInRange(char *param, uint16_t lowl, uint16_t higl, uint16_t &rval, bool verbose);
 void errBadCmd();

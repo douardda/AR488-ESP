@@ -7,7 +7,7 @@
 
 extern Stream *arSerial;
 extern GPIB gpib;
-extern CommandComm comm;
+extern Controller controller;
 
 
 /***** Array containing index of accepted ++ commands *****/
@@ -61,14 +61,14 @@ static cmdRec cmdHidx [] = {
 };
 
 /***** Execute a command *****/
-void execCmd(char *buffr, uint8_t dsize, AR488Conf& AR488, CommandComm& comm) {
+void execCmd(char *buffr, uint8_t dsize, AR488Conf& AR488, Controller& controller) {
   char line[PBSIZE];
 
   // Copy collected chars to line buffer
   memcpy(line, buffr, dsize);
 
   // Flush the parse buffer
-  comm.flushPbuf();
+  controller.flushPbuf();
 
 #ifdef DEBUG1
   dbSerial->print(F("execCmd: Command received: ")); printHex(line, dsize);
@@ -89,7 +89,7 @@ void execCmd(char *buffr, uint8_t dsize, AR488Conf& AR488, CommandComm& comm) {
   getCmd(line, AR488);
 
   // Show a prompt on completion?
-  if (AR488.isVerb) comm.showPrompt();
+  if (AR488.isVerb) controller.showPrompt();
 }
 
 
@@ -325,7 +325,7 @@ void amode_h(char *params, AR488Conf& AR488) {
       arSerial->println(F("         'addressed to talk but nothing to say' errors"));
     }
     AR488.amode = (uint8_t)val;
-    if (AR488.amode < 3) comm.aRead = false;
+    if (AR488.amode < 3) controller.aRead = false;
     if (AR488.isVerb) {
       arSerial->print(F("Auto mode: "));
       arSerial->println(AR488.amode);
@@ -370,7 +370,7 @@ void read_h(char *params, AR488Conf& AR488) {
   }
   if (AR488.amode == 3) {
     // In auto continuous mode we set this flag to indicate we are ready for continuous read
-    comm.aRead = true;
+    controller.aRead = true;
   } else {
     // If auto mode is disabled we do a single read
     gpib.gpibReceiveData();
@@ -547,7 +547,7 @@ void trg_h(char *params, AR488Conf& AR488) {
  * the interface program and re-initialise all parameters.
  */
 void rst_h(char *params, AR488Conf& AR488) {
-  comm.reset();
+  controller.reset();
 }
 
 
@@ -761,14 +761,14 @@ void lon_h(char *params, AR488Conf& AR488) {
   uint16_t val;
   if (params != NULL) {
     if (notInRange(params, 0, 1, val, AR488.isVerb)) return;
-    comm.isRO = val ? true : false;
-    if (comm.isTO) comm.isTO = false; // Talk-only mode must be disabled!
+    controller.isRO = val ? true : false;
+    if (controller.isTO) controller.isTO = false; // Talk-only mode must be disabled!
     if (AR488.isVerb) {
       arSerial->print(F("LON: "));
       arSerial->println(val ? "ON" : "OFF") ;
     }
   } else {
-    arSerial->println(comm.isRO);
+    arSerial->println(controller.isRO);
   }
 }
 
@@ -941,14 +941,14 @@ void ton_h(char *params, AR488Conf& AR488) {
   uint16_t val;
   if (params != NULL) {
     if (notInRange(params, 0, 1, val, AR488.isVerb)) return;
-    comm.isTO = val ? true : false;
-    if (comm.isTO) comm.isRO = false; // Read-only mode must be disabled in TO mode!
+    controller.isTO = val ? true : false;
+    if (controller.isTO) controller.isRO = false; // Read-only mode must be disabled in TO mode!
     if (AR488.isVerb) {
       arSerial->print(F("TON: "));
       arSerial->println(val ? "ON" : "OFF") ;
     }
   } else {
-    arSerial->println(comm.isTO);
+    arSerial->println(controller.isTO);
   }
 }
 
@@ -968,15 +968,15 @@ void srqa_h(char *params, AR488Conf& AR488) {
     if (notInRange(params, 0, 1, val, AR488.isVerb)) return;
     switch (val) {
       case 0:
-        comm.isSrqa = false;
+        controller.isSrqa = false;
         break;
       case 1:
-        comm.isSrqa = true;
+        controller.isSrqa = true;
         break;
     }
-    if (AR488.isVerb) arSerial->println(comm.isSrqa ? "SRQ auto ON" : "SRQ auto OFF") ;
+    if (AR488.isVerb) arSerial->println(controller.isSrqa ? "SRQ auto ON" : "SRQ auto OFF") ;
   } else {
-    arSerial->println(comm.isSrqa);
+    arSerial->println(controller.isSrqa);
   }
 }
 
@@ -1031,7 +1031,7 @@ void macro_h(char *params, AR488Conf& AR488) {
   if (params != NULL) {
     if (notInRange(params, 0, 9, val, AR488.isVerb)) return;
     //    execMacro((uint8_t)val);
-    comm.runMacro = (uint8_t)val;
+    controller.runMacro = (uint8_t)val;
   } else {
     for (int i = 0; i < 10; i++) {
       macro = (pgm_read_word(macros + i));

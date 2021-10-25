@@ -6,9 +6,9 @@
 
 #define PBSIZE 128
 
-class CommandComm {
+class Controller {
 public:
-  CommandComm(Stream&, AR488Conf&);
+  Controller(Stream&, AR488Conf&);
   uint8_t parseInput(char c);
   bool isCmd(char *buffr);
   bool isIdnQuery(char *buffr);

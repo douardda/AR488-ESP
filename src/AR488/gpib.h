@@ -6,7 +6,7 @@
 
 class GPIB {
 public:
-  GPIB(Stream&, AR488Conf&, CommandComm&);
+  GPIB(Stream&, AR488Conf&, Controller&);
 
   void initDevice();
   void initController();
@@ -53,7 +53,7 @@ public:
 private:
   Stream &outstream;
   AR488Conf &AR488;
-  CommandComm &comm;
+  Controller &controller;
   bool verbose;
 
   //

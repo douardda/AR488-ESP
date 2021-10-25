@@ -75,7 +75,7 @@
 */
 
 
-CommandComm::CommandComm(Stream& stream, AR488Conf& conf):
+Controller::Controller(Stream& stream, AR488Conf& conf):
 		verbose(false),
 		stream(stream),
 		AR488(conf)
@@ -83,7 +83,7 @@ CommandComm::CommandComm(Stream& stream, AR488Conf& conf):
 }
 
 /***** Add character to the buffer and parse *****/
-uint8_t CommandComm::parseInput(char c) {
+uint8_t Controller::parseInput(char c) {
 
   uint8_t r = 0;
 
@@ -180,7 +180,7 @@ uint8_t CommandComm::parseInput(char c) {
 
 
 /***** Is this a command? *****/
-bool CommandComm::isCmd(char *buffr) {
+bool Controller::isCmd(char *buffr) {
   if (buffr[0] == PLUS && buffr[1] == PLUS) {
 #ifdef DEBUG1
     dbSerial->println(F("isCmd: Command detected."));
@@ -192,7 +192,7 @@ bool CommandComm::isCmd(char *buffr) {
 
 
 /***** Is this an *idn? query? *****/
-bool CommandComm::isIdnQuery(char *buffr) {
+bool Controller::isIdnQuery(char *buffr) {
   // Check for upper or lower case *idn?
   if (strncasecmp(buffr, "*idn?", 5)==0) {
 #ifdef DEBUG1
@@ -205,21 +205,21 @@ bool CommandComm::isIdnQuery(char *buffr) {
 
 
 /***** Add character to the buffer *****/
-void CommandComm::addPbuf(char c) {
+void Controller::addPbuf(char c) {
   pBuf[pbPtr] = c;
   pbPtr++;
 }
 
 
 /***** Clear the parse buffer *****/
-void CommandComm::flushPbuf() {
+void Controller::flushPbuf() {
   memset(pBuf, '\0', PBSIZE);
   pbPtr = 0;
   lnRdy = 0;
 }
 
 /***** Show a prompt *****/
-void CommandComm::showPrompt() {
+void Controller::showPrompt() {
   // Print prompt
   // stream.println();
   stream.print("> ");
@@ -236,7 +236,7 @@ void CommandComm::showPrompt() {
  * lnRdy=1: terminator detected, sequence in parse buffer is a ++ command
  * lnRdy=2: terminator detected, sequence in parse buffer is data or direct instrument command
  */
-uint8_t CommandComm::serialIn_h() {
+uint8_t Controller::serialIn_h() {
   uint8_t bufferStatus = 0;
   // Parse serial input until we have detected a line terminator
   while (stream.available() && bufferStatus==0) {   // Parse while characters available and line is not complete
@@ -255,7 +255,7 @@ uint8_t CommandComm::serialIn_h() {
 }
 
 
-void CommandComm::reset() {
+void Controller::reset() {
 #ifdef WDTO_1S
   // Where defined, reset controller using watchdog timeout
   unsigned long tout;
