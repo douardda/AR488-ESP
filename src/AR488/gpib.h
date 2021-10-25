@@ -57,6 +57,8 @@ private:
 
 public:  // TODO: fix this
   bool rEoi = false;      // Read eoi requested
+  bool rEbt = false;      // Read with specified terminator character
+  uint8_t eByte = 0;      // Termination character
 
 };
 

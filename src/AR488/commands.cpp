@@ -356,7 +356,7 @@ void ver_h(char *params, AR488Conf& AR488, AR488State& AR488st) {
 void read_h(char *params, AR488Conf& AR488, AR488State& AR488st) {
   // Clear read flags
   gpib.rEoi = false;
-  AR488st.rEbt = false;
+  gpib.rEbt = false;
   // Read any parameters
   if (params != NULL) {
     if (strlen(params) > 3) {
@@ -364,8 +364,8 @@ void read_h(char *params, AR488Conf& AR488, AR488State& AR488st) {
     } else if (strncmp(params, "eoi", 3) == 0) { // Read with eoi detection
       gpib.rEoi = true;
     } else { // Assume ASCII character given and convert to an 8 bit byte
-      AR488st.rEbt = true;
-      AR488st.eByte = atoi(params);
+      gpib.rEbt = true;
+      gpib.eByte = atoi(params);
     }
   }
   if (AR488.amode == 3) {

@@ -368,9 +368,9 @@ bool GPIB::gpibReceiveData() {
 
 /***** Check for terminator *****/
 bool GPIB::isTerminatorDetected(uint8_t bytes[3], uint8_t eor_sequence){
-  if (AR488st.rEbt) {
+  if (rEbt) {
     // Stop on specified <char> if appended to ++read command
-    if (bytes[0] == AR488st.eByte) return true;
+    if (bytes[0] == eByte) return true;
   }else{
     // Look for specified terminator (CR+LF by default)
     switch (eor_sequence) {
