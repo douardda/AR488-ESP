@@ -390,7 +390,7 @@ void loop() {
     }
 
     // Check status of SRQ and SPOLL if asserted
-    if (AR488st.isSRQ && AR488st.isSrqa) {
+    if (AR488st.isSRQ && comm.isSrqa) {
 			spoll_h(NULL, AR488, AR488st);
       AR488st.isSRQ = false;
     }

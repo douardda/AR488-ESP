@@ -98,8 +98,6 @@ typedef struct {
   // State flags set by interrupt being triggered
   volatile bool isATN = false;  // has ATN been asserted?
   volatile bool isSRQ = false;  // has SRQ been asserted?
-  // SRQ auto mode
-  bool isSrqa = false;
   // Interrupt without handler fired
   //volatile bool isBAD = false;
   // Whether to run Macro 0 (macros must be enabled)

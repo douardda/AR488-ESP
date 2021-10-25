@@ -972,15 +972,15 @@ void srqa_h(char *params, AR488Conf& AR488, AR488State& AR488st) {
     if (notInRange(params, 0, 1, val, AR488.isVerb)) return;
     switch (val) {
       case 0:
-        AR488st.isSrqa = false;
+        comm.isSrqa = false;
         break;
       case 1:
-        AR488st.isSrqa = true;
+        comm.isSrqa = true;
         break;
     }
-    if (AR488.isVerb) arSerial->println(AR488st.isSrqa ? "SRQ auto ON" : "SRQ auto OFF") ;
+    if (AR488.isVerb) arSerial->println(comm.isSrqa ? "SRQ auto ON" : "SRQ auto OFF") ;
   } else {
-    arSerial->println(AR488st.isSrqa);
+    arSerial->println(comm.isSrqa);
   }
 }
 
