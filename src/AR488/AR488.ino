@@ -396,7 +396,7 @@ void loop() {
     }
 
     // Continuous auto-receive data from GPIB bus
-    if (AR488.amode == 3 && AR488st.aRead) gpib.gpibReceiveData();
+    if (AR488.amode == 3 && comm.aRead) gpib.gpibReceiveData();
   }
 
   // Device mode:

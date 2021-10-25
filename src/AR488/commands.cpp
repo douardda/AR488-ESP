@@ -325,7 +325,7 @@ void amode_h(char *params, AR488Conf& AR488, AR488State& AR488st) {
       arSerial->println(F("         'addressed to talk but nothing to say' errors"));
     }
     AR488.amode = (uint8_t)val;
-    if (AR488.amode < 3) AR488st.aRead = false;
+    if (AR488.amode < 3) comm.aRead = false;
     if (AR488.isVerb) {
       arSerial->print(F("Auto mode: "));
       arSerial->println(AR488.amode);
@@ -370,7 +370,7 @@ void read_h(char *params, AR488Conf& AR488, AR488State& AR488st) {
   }
   if (AR488.amode == 3) {
     // In auto continuous mode we set this flag to indicate we are ready for continuous read
-    AR488st.aRead = true;
+    comm.aRead = true;
   } else {
     // If auto mode is disabled we do a single read
     gpib.gpibReceiveData();

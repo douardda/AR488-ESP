@@ -33,7 +33,8 @@ public:  // TODO: better than this...
   char pBuf[PBSIZE];
   uint8_t pbPtr = 0;
   bool dataBufferFull = false;
-  uint8_t lnRdy = 0; // CR/LF terminated line ready to process
+  uint8_t lnRdy = 0;  // CR/LF terminated line ready to process
+  bool aRead = false; // GPIB data read in progress
 
 };
 #endif

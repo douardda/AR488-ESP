@@ -268,7 +268,7 @@ bool GPIB::gpibReceiveData() {
 
     // Line terminator detected (loop breaks on command being detected or data buffer full)
     if (comm.lnRdy > 0) {
-      AR488st.aRead = false;  // Stop auto read
+      comm.aRead = false;  // Stop auto read
       break;
     }
 
