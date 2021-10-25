@@ -100,8 +100,6 @@ typedef struct {
   volatile bool isSRQ = false;  // has SRQ been asserted?
   // Interrupt without handler fired
   //volatile bool isBAD = false;
-  // Whether to run Macro 0 (macros must be enabled)
-  uint8_t runMacro = 0;
   // Send response to *idn?
   bool sendIdn = false;
 } AR488State;

@@ -42,6 +42,7 @@ public:  // TODO: better than this...
   bool isRO = false;            // Read only mode flag
   bool isTO = false;            // Talk only mode flag
   bool isSrqa = false;          // SRQ auto mode
+  uint8_t runMacro = 0;         // Macro to run next loop
 
 };
 #endif

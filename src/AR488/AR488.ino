@@ -338,9 +338,9 @@ void loop() {
  */
 #ifdef USE_MACROS
   // Run user macro if flagged
-  if (AR488st.runMacro > 0) {
-    execMacro(AR488st.runMacro);
-    AR488st.runMacro = 0;
+  if (comm.runMacro > 0) {
+    execMacro(comm.runMacro);
+    comm.runMacro = 0;
   }
 #endif
 

@@ -1035,7 +1035,7 @@ void macro_h(char *params, AR488Conf& AR488, AR488State& AR488st) {
   if (params != NULL) {
     if (notInRange(params, 0, 9, val, AR488.isVerb)) return;
     //    execMacro((uint8_t)val);
-    runMacro = (uint8_t)val;
+    comm.runMacro = (uint8_t)val;
   } else {
     for (int i = 0; i < 10; i++) {
       macro = (pgm_read_word(macros + i));
