@@ -4,8 +4,8 @@
 #include "commands.h"
 
 
-GPIB::GPIB(Stream& stream, Controller& controller):
-		outstream(stream),
+GPIB::GPIB(Controller& controller):
+		outstream(controller.stream),
 		controller(controller)
 {
 }

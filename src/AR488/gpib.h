@@ -5,7 +5,7 @@
 
 class GPIB {
 public:
-  GPIB(Stream&, Controller&);
+  GPIB(Controller&);
 
   void initDevice();
   void initController();

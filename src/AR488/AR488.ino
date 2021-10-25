@@ -72,124 +72,16 @@
 /*********************************/
 
 
-/***************************************/
-/***** MACRO CONFIGURATION SECTION *****/
-/***** vvvvvvvvvvvvvvvvvvvvvvvvvvv *****/
-// SEE >>>>> Config.h <<<<<
-/***** ^^^^^^^^^^^^^^^^^^^^^^^^^^^ *****/
-/***** MACRO CONFIGURATION SECTION *****/
-/***************************************/
-
-
-/*************************************/
-/***** MACRO STRUCTRURES SECTION *****/
-/***** vvvvvvvvvvvvvvvvvvvvvvvvv *****/
-#ifdef USE_MACROS
-
-/*** DO NOT MODIFY ***/
-/*** vvvvvvvvvvvvv ***/
-
-/***** STARTUP MACRO *****/
-const char startup_macro[] PROGMEM = {MACRO_0};
-
-/***** Consts holding USER MACROS 1 - 9 *****/
-const char macro_1 [] PROGMEM = {MACRO_1};
-const char macro_2 [] PROGMEM = {MACRO_2};
-const char macro_3 [] PROGMEM = {MACRO_3};
-const char macro_4 [] PROGMEM = {MACRO_4};
-const char macro_5 [] PROGMEM = {MACRO_5};
-const char macro_6 [] PROGMEM = {MACRO_6};
-const char macro_7 [] PROGMEM = {MACRO_7};
-const char macro_8 [] PROGMEM = {MACRO_8};
-const char macro_9 [] PROGMEM = {MACRO_9};
-
-
-/* Macro pointer array */
-const char * const macros[] PROGMEM = {
-  startup_macro,
-  macro_1,
-  macro_2,
-  macro_3,
-  macro_4,
-  macro_5,
-  macro_6,
-  macro_7,
-  macro_8,
-  macro_9
-};
-
-/*** ^^^^^^^^^^^^^ ***/
-/*** DO NOT MODIFY ***/
-
-#endif
-/***** ^^^^^^^^^^^^^^^^^^^^ *****/
-/***** MACRO CONFIG SECTION *****/
-/********************************/
-
-
-
-/**********************************/
-/***** SERIAL PORT MANAGEMENT *****/
-/***** vvvvvvvvvvvvvvvvvvvvvv *****/
-
-
-#ifdef AR_CDC_SERIAL
-  Serial_ *arSerial_ = &(AR_SERIAL_PORT);
-  #ifndef DB_SERIAL_PORT
-    Serial_ *dbSerial_ = arSerial_;
-  #endif
-#endif
-#ifdef AR_HW_SERIAL
-  HardwareSerial *arSerial_ = &(AR_SERIAL_PORT);
-  #ifndef DB_SERIAL_PORT
-    HardwareSerial *dbSerial_ = arSerial_;
-  #endif
-#endif
-// Note: SoftwareSerial support conflicts with PCINT support
-#ifdef AR_SW_SERIAL
-  #include <SoftwareSerial.h>
-  SoftwareSerial swArSerial(AR_SW_SERIAL_RX, AR_SW_SERIAL_TX);
-  SoftwareSerial *arSerial_ = &swArSerial;
-  #ifndef DB_SERIAL_PORT
-    SoftwareSerial *dbSerial_ = arSerial;
-  #endif
-#endif
-
-Stream *arSerial = (Stream*) arSerial_;
-
-/***** Debug Port - if DB_SERIAL_PORT is set *****/
-
-#ifdef DB_SERIAL_PORT
-  #ifdef DB_CDC_SERIAL
-    Serial_ *dbSerial_ = &(DB_SERIAL_PORT);
-  #endif
-  #ifdef DB_HW_SERIAL
-    HardwareSerial *dbSerial_ = &(DB_SERIAL_PORT);
-  #endif
-  // Note: SoftwareSerial support conflicts with PCINT support
-  #ifdef DB_SW_SERIAL
-    #include <SoftwareSerial.h>
-    SoftwareSerial swDbSerial(DB_SW_SERIAL_RX, DB_SW_SERIAL_TX);
-    SoftwareSerial *dbSerial_ = &swDbSerial;
-  #endif
-#endif
-
-Stream *dbSerial = (Stream*) dbSerial_;
-
-
 #include "AR488.h"
+#include "serial.h"
 #include "controller.h"
 #include "commands.h"
 #include "gpib.h"
-
-
-/***** ^^^^^^^^^^^^^^^^^^^^^^ *****/
-/***** SERIAL PORT MANAGEMENT *****/
-/**********************************/
+#include "macros.h"
 
 /****** Global variables with volatile values related to controller state *****/
-Controller controller(*arSerial);
-GPIB gpib(*arSerial, controller);
+Controller controller(getSerial());
+GPIB gpib(controller);
 
 /***** ^^^^^^^^^^^^^^^^^^^^^^^^ *****/
 /***** COMMON VARIABLES SECTION *****/
@@ -210,10 +102,10 @@ void setup() {
 #endif
 
   // Turn off internal LED (set OUPTUT/LOW)
-//#ifdef LED_BUILTIN
+#ifdef LED_BUILTIN
   pinMode(LED_BUILTIN, OUTPUT);
   digitalWrite(LED_BUILTIN, HIGH);
-//#endif
+#endif
 
 #ifdef USE_INTERRUPTS
   // Turn on interrupts on port
@@ -222,27 +114,7 @@ void setup() {
 
   // Initialise parse buffer
   controller.flushPbuf();
-
-// Initialise debug port
-#ifdef DB_SERIAL_PORT
-  if (dbSerial_ != arSerial_) dbSerial_->begin(DB_SERIAL_BAUD);
-#endif
-
- // Initialise serial comms over USB or Bluetooth
-#ifdef AR_BT_EN
-  // Initialise Bluetooth
-  btInit();
-  arSerial_->begin(AR_BT_BAUD);
-#else
-  // Start the serial port
-  #ifdef AR_SW_SERIAL
-    arSerial_->begin(AR_SW_SERIAL_BAUD);
-  #else
-    arSerial_->begin(AR_SERIAL_BAUD);
-  #endif
-#endif
-		//arSerial->println(F("AR488 starting."));
-
+	initSerial();
 
 // Un-comment for diagnostic purposes
 /*
@@ -316,11 +188,11 @@ void setup() {
 
 #if defined(USE_MACROS) && defined(RUN_STARTUP)
   // Run startup macro
-  execMacro(0);
+  execMacro(0, gpib);
 #endif
 
 //#ifdef SAY_HELLO
-  arSerial->println(F("AR488 ready."));
+  controller.stream.println(F("AR488 ready."));
 //#endif
 
 }
@@ -337,7 +209,7 @@ void loop() {
 #ifdef USE_MACROS
   // Run user macro if flagged
   if (controller.runMacro > 0) {
-    execMacro(controller.runMacro);
+			execMacro(controller.runMacro, gpib);
     controller.runMacro = 0;
   }
 #endif
@@ -414,11 +286,11 @@ void loop() {
 
   // IDN query ?
   if (controller.sendIdn) {
-    if (controller.config.idn==1) arSerial->println(controller.config.sname);
+    if (controller.config.idn==1) controller.stream.println(controller.config.sname);
     if (controller.config.idn==2) {
-				arSerial->print(controller.config.sname);
-				arSerial->print("-");
-				arSerial->println(controller.config.serial);
+				controller.stream.print(controller.config.sname);
+				controller.stream.print("-");
+				controller.stream.println(controller.config.serial);
 		}
     controller.sendIdn = false;
   }
@@ -447,51 +319,5 @@ void printHex(char *buffr, int dsize) {
     dbSerial->print(buffr[i], HEX); dbSerial->print(" ");
   }
   dbSerial->println();
-}
-#endif
-
-/***** If enabled, executes a macro *****/
-#ifdef USE_MACROS
-void execMacro(uint8_t idx) {
-  char c;
-  const char * macro = pgm_read_word(macros + idx);
-  int ssize = strlen_P(macro);
-
-  // Read characters from macro character array
-  for (int i = 0; i < ssize; i++) {
-    c = pgm_read_byte_near(macro + i);
-    if (c == CR || c == LF || i == (ssize - 1)) {
-      // Reached last character before NL. Add to buffer before processing
-      if (i == ssize-1) {
-        // Check buffer and add character
-        if (pbPtr < (PBSIZE - 2)){
-          addPbuf(c);
-        }else{
-          // Buffer full - clear and exit
-          controller.flushPbuf();
-          return;
-        }
-      }
-      if (isCmd(pBuf)){
-				execCmd(controller.pBuf, strlen(controller.pBuf), gpib);
-      }else{
-        gpib.sendToInstrument(controller.pBuf, strlen(controller.pBuf));
-      }
-      // Done - clear the buffer
-      controller.flushPbuf();
-    } else {
-      // Check buffer and add character
-      if (pbPtr < (PBSIZE - 2)) {
-        addPbuf(c);
-      } else {
-        // Exceeds buffer size - clear buffer and exit
-        i = ssize;
-        return;
-      }
-    }
-  }
-
-  // Clear the buffer ready for serial input
-  controller.flushPbuf();
 }
 #endif

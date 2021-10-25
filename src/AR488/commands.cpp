@@ -3,6 +3,7 @@
 #include "commands.h"
 #include "gpib.h"
 #include "controller.h"
+#include "macros.h"
 
 
 /***** Array containing index of accepted ++ commands *****/
@@ -1027,7 +1028,7 @@ void macro_h(char *params, GPIB& gpib) {
     gpib.controller.runMacro = (uint8_t)val;
   } else {
     for (int i = 0; i < 10; i++) {
-      macro = (pgm_read_word(macros + i));
+	  macro = (char*)pgm_read_word(macros + i);
       //      gpib.controller.stream.print(i);gpib.controller.stream.print(F(": "));
       if (strlen_P(macro) > 0) {
         gpib.controller.stream.print(i);
