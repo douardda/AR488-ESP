@@ -80,7 +80,7 @@ void GPIB::gpibSendData(char *data, uint8_t dsize) {
   bool err = false;
 
   // If lon is turned on we cannot send data so exit
-  if (AR488st.isRO) return;
+  if (comm.isRO) return;
 
   // Controler can unlisten bus and address devices
   if (AR488.cmode == 2) {

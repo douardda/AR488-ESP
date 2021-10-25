@@ -401,9 +401,9 @@ void loop() {
 
   // Device mode:
   if (AR488.cmode == 1) {
-    if (AR488st.isTO) {
+    if (comm.isTO) {
       if (comm.lnRdy == 2) gpib.sendToInstrument(comm.pBuf, comm.pbPtr);
-    }else if (AR488st.isRO) {
+    }else if (comm.isRO) {
       gpib.lonMode();
     }else{
       if (AR488st.isATN) gpib.attnRequired();

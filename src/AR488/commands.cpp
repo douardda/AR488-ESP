@@ -765,14 +765,14 @@ void lon_h(char *params, AR488Conf& AR488, AR488State& AR488st) {
   uint16_t val;
   if (params != NULL) {
     if (notInRange(params, 0, 1, val, AR488.isVerb)) return;
-    AR488st.isRO = val ? true : false;
-    if (AR488st.isTO) AR488st.isTO = false; // Talk-only mode must be disabled!
+    comm.isRO = val ? true : false;
+    if (comm.isTO) comm.isTO = false; // Talk-only mode must be disabled!
     if (AR488.isVerb) {
       arSerial->print(F("LON: "));
       arSerial->println(val ? "ON" : "OFF") ;
     }
   } else {
-    arSerial->println(AR488st.isRO);
+    arSerial->println(comm.isRO);
   }
 }
 
@@ -945,14 +945,14 @@ void ton_h(char *params, AR488Conf& AR488, AR488State& AR488st) {
   uint16_t val;
   if (params != NULL) {
     if (notInRange(params, 0, 1, val, AR488.isVerb)) return;
-    AR488st.isTO = val ? true : false;
-    if (AR488st.isTO) AR488st.isRO = false; // Read-only mode must be disabled in TO mode!
+    comm.isTO = val ? true : false;
+    if (comm.isTO) comm.isRO = false; // Read-only mode must be disabled in TO mode!
     if (AR488.isVerb) {
       arSerial->print(F("TON: "));
       arSerial->println(val ? "ON" : "OFF") ;
     }
   } else {
-    arSerial->println(AR488st.isTO);
+    arSerial->println(comm.isTO);
   }
 }
 

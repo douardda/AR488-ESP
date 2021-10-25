@@ -97,10 +97,6 @@ typedef struct {
 typedef struct {
   // GPIB data receive flags
   //bool isReading = false; // Is a GPIB read in progress?
-  // Read only mode flag
-  bool isRO = false;
-  // Talk only mode flag
-  bool isTO = false;
   // GPIB command parser
   bool aTt = false;
   bool aTl = false;

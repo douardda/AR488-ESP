@@ -39,6 +39,8 @@ public:  // TODO: better than this...
   // Escaped character flag
   bool isEsc = false;           // Charcter escaped
   bool isPlusEscaped = false;   // Plus escaped
+  bool isRO = false;            // Read only mode flag
+  bool isTO = false;            // Talk only mode flag
 
 };
 #endif
