@@ -124,7 +124,7 @@ uint8_t CommandComm::parseInput(char c) {
               }
             // Buffer contains *idn? query and interface to respond
             }else if (pbPtr>3 && AR488.idn>0 && isIdnQuery(pBuf)){
-              AR488st.sendIdn = true;
+              sendIdn = true;
               flushPbuf();
             // Buffer has at least 1 character = instrument data to send to gpib bus
             }else if (pbPtr > 0) {

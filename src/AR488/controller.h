@@ -43,6 +43,7 @@ public:  // TODO: better than this...
   bool isTO = false;            // Talk only mode flag
   bool isSrqa = false;          // SRQ auto mode
   uint8_t runMacro = 0;         // Macro to run next loop
+  bool sendIdn = false;         // Send response to *idn?
 
 };
 #endif

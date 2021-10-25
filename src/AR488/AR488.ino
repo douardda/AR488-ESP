@@ -415,14 +415,14 @@ void loop() {
 //  lnRdy = 0;
 
   // IDN query ?
-  if (AR488st.sendIdn) {
+  if (comm.sendIdn) {
     if (AR488.idn==1) arSerial->println(AR488.sname);
     if (AR488.idn==2) {
 				arSerial->print(AR488.sname);
 				arSerial->print("-");
 				arSerial->println(AR488.serial);
 		}
-    AR488st.sendIdn = false;
+    comm.sendIdn = false;
   }
 
   // Check serial buffer

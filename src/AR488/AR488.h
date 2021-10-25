@@ -100,8 +100,6 @@ typedef struct {
   volatile bool isSRQ = false;  // has SRQ been asserted?
   // Interrupt without handler fired
   //volatile bool isBAD = false;
-  // Send response to *idn?
-  bool sendIdn = false;
 } AR488State;
 
 void setup();
