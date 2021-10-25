@@ -209,7 +209,7 @@ bool GPIB::gpibReceiveData() {
   bool eoiDetected = false;
 
   // Reset transmission break flag
-  AR488st.tranBrk = 0;
+  tranBrk = 0;
 
   // Set status of EOI detection
   eoiStatus = rEoi; // Save status of rEoi flag
@@ -255,7 +255,7 @@ bool GPIB::gpibReceiveData() {
   while (r == 0) {
 
     // Tranbreak > 0 indicates break condition
-    if (AR488st.tranBrk > 0) break;
+    if (tranBrk > 0) break;
 
     // ATN asserted
     if (isAtnAsserted()) break;
@@ -358,7 +358,7 @@ bool GPIB::gpibReceiveData() {
 
   // Reset flags
 //  isReading = false;
-  if (AR488st.tranBrk > 0) AR488st.tranBrk = 0;
+  if (tranBrk > 0) tranBrk = 0;
 
   if (r > 0) return ERR;
 
@@ -896,7 +896,7 @@ void GPIB::unl_h() {
   dbSerial->println(F("Unlisten received."));
 #endif
   rEoi = false;
-  AR488st.tranBrk = 3;  // Stop receving transmission
+  tranBrk = 3;  // Stop receving transmission
 }
 
 
