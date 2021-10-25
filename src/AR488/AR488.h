@@ -95,7 +95,6 @@ typedef struct {
 
 
 typedef struct {
-  uint8_t lnRdy = 0; // CR/LF terminated line ready to process
   // GPIB data receive flags
   //bool isReading = false; // Is a GPIB read in progress?
   bool aRead = false;     // GPIB data read in progress

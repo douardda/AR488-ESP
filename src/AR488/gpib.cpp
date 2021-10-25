@@ -264,10 +264,10 @@ bool GPIB::gpibReceiveData() {
     r = gpibReadByte(&bytes[0], &eoiDetected);
 
     // When reading with amode=3 or EOI check serial input and break loop if neccessary
-    if ((AR488.amode==3) || AR488st.rEoi) AR488st.lnRdy = comm.serialIn_h();
+    if ((AR488.amode==3) || AR488st.rEoi) comm.serialIn_h();
 
     // Line terminator detected (loop breaks on command being detected or data buffer full)
-    if (AR488st.lnRdy > 0) {
+    if (comm.lnRdy > 0) {
       AR488st.aRead = false;  // Stop auto read
       break;
     }
@@ -854,7 +854,7 @@ void GPIB::mla_h(){
 
 /***** Device is addressed to talk - so send data *****/
 void GPIB::mta_h(){
-  if (AR488st.lnRdy == 2) sendToInstrument(comm.pBuf, comm.pbPtr);
+  if (comm.lnRdy == 2) sendToInstrument(comm.pBuf, comm.pbPtr);
 }
 
 
@@ -914,7 +914,7 @@ void GPIB::lonMode(){
   gpibReceiveData();
 
   // Clear the buffer to prevent it getting blocked
-  if (AR488st.lnRdy==2) comm.flushPbuf();
+  if (comm.lnRdy==2) comm.flushPbuf();
 
 }
 
@@ -958,7 +958,6 @@ void GPIB::sendToInstrument(char *buffr, uint8_t dsize) {
 
   // Flush the parse buffer
   comm.flushPbuf();
-  AR488st.lnRdy = 0;
 
 #ifdef DEBUG1
   dbSerial->println(F("sendToInstrument: Sent."));

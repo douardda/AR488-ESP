@@ -216,6 +216,7 @@ void CommandComm::addPbuf(char c) {
 void CommandComm::flushPbuf() {
   memset(pBuf, '\0', PBSIZE);
   pbPtr = 0;
+  lnRdy = 0;
 }
 
 /***** Show a prompt *****/
@@ -250,6 +251,7 @@ uint8_t CommandComm::serialIn_h() {
   }
 #endif
 
+  lnRdy = bufferStatus;
   return bufferStatus;
 }
 

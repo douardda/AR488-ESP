@@ -69,7 +69,6 @@ void execCmd(char *buffr, uint8_t dsize, AR488Conf& AR488, AR488State& AR488st, 
 
   // Flush the parse buffer
   comm.flushPbuf();
-  AR488st.lnRdy = 0;
 
 #ifdef DEBUG1
   dbSerial->print(F("execCmd: Command received: ")); printHex(line, dsize);

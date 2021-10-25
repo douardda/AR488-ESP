@@ -367,14 +367,14 @@ void loop() {
  */
 
   // lnRdy=1: received a command so execute it...
-  if (AR488st.lnRdy == 1) {
+  if (comm.lnRdy == 1) {
 		execCmd(comm.pBuf, comm.pbPtr, AR488, AR488st, comm);
   }
 
   // Controller mode:
   if (AR488.cmode == 2) {
     // lnRdy=2: received data - send it to the instrument...
-    if (AR488st.lnRdy == 2) {
+    if (comm.lnRdy == 2) {
       gpib.sendToInstrument(comm.pBuf, comm.pbPtr);
       // Auto-read data from GPIB bus following any command
       if (AR488.amode == 1) {
@@ -402,12 +402,12 @@ void loop() {
   // Device mode:
   if (AR488.cmode == 1) {
     if (AR488st.isTO) {
-      if (AR488st.lnRdy == 2) gpib.sendToInstrument(comm.pBuf, comm.pbPtr);
+      if (comm.lnRdy == 2) gpib.sendToInstrument(comm.pBuf, comm.pbPtr);
     }else if (AR488st.isRO) {
       gpib.lonMode();
     }else{
       if (AR488st.isATN) gpib.attnRequired();
-      if (AR488st.lnRdy == 2) gpib.sendToInstrument(comm.pBuf, comm.pbPtr);
+      if (comm.lnRdy == 2) gpib.sendToInstrument(comm.pBuf, comm.pbPtr);
     }
   }
 
@@ -426,7 +426,7 @@ void loop() {
   }
 
   // Check serial buffer
-  AR488st.lnRdy = comm.serialIn_h();
+  comm.serialIn_h();
 
   delayMicroseconds(5);
 }
