@@ -51,6 +51,8 @@ private:
   CommandComm &comm;
   bool verbose;
 
+  //
+  bool deviceAddressing = true;
 };
 
 

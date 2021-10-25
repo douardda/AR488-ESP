@@ -85,7 +85,7 @@ void GPIB::gpibSendData(char *data, uint8_t dsize) {
   // Controler can unlisten bus and address devices
   if (AR488.cmode == 2) {
 
-    if (AR488st.deviceAddressing) {
+    if (deviceAddressing) {
       // Address device to listen
       if (addrDev(AR488.paddr, 0)) {
         if (AR488.isVerb) {
@@ -97,7 +97,7 @@ void GPIB::gpibSendData(char *data, uint8_t dsize) {
       }
     }
 
-    AR488st.deviceAddressing = AR488st.dataBufferFull ? false : true;
+    deviceAddressing = comm.dataBufferFull ? false : true;
 
 #ifdef DEBUG3
     dbSerial->println(F("Device addressed."));
@@ -153,7 +153,7 @@ void GPIB::gpibSendData(char *data, uint8_t dsize) {
   }
 
   // If EOI enabled and no more data to follow then assert EOI
-  if (AR488.eoi && !AR488st.dataBufferFull) {
+  if (AR488.eoi && !comm.dataBufferFull) {
     setGpibState(0b00000000, 0b00010000, 0);
     //    setGpibState(0b00010000, 0b00000000, 0b00010000);
     delayMicroseconds(40);
@@ -166,7 +166,7 @@ void GPIB::gpibSendData(char *data, uint8_t dsize) {
 
   if (AR488.cmode == 2) {   // Controller mode
     if (!err) {
-      if (AR488st.deviceAddressing) {
+      if (deviceAddressing) {
         // Untalk controller and unlisten bus
         if (uaddrDev()) {
           if (AR488.isVerb) outstream.println(F("gpibSendData: Failed to unlisten bus"));
@@ -951,7 +951,7 @@ void GPIB::sendToInstrument(char *buffr, uint8_t dsize) {
   // Send string to instrument
   gpibSendData(buffr, dsize);
   // Clear data buffer full flag
-  if (AR488st.dataBufferFull) AR488st.dataBufferFull = false;
+  if (comm.dataBufferFull) comm.dataBufferFull = false;
 
   // Show a prompt on completion?
   if (AR488.isVerb) comm.showPrompt();

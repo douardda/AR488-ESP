@@ -118,8 +118,6 @@ typedef struct {
   bool aTt = false;
   bool aTl = false;
   // Data send mode flags
-  bool deviceAddressing = true;   // Suppress sending commands to address the instrument
-  bool dataBufferFull = false;    // Flag when parse buffer is full
   // State flags set by interrupt being triggered
   volatile bool isATN = false;  // has ATN been asserted?
   volatile bool isSRQ = false;  // has SRQ been asserted?

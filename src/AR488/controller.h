@@ -32,6 +32,6 @@ private:
 public:  // TODO: better than this...
   char pBuf[PBSIZE];
   uint8_t pbPtr = 0;
-
+  bool dataBufferFull = false;
 };
 #endif

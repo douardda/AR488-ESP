@@ -172,7 +172,7 @@ uint8_t CommandComm::parseInput(char c) {
       }
       flushPbuf();
     }else{  // Buffer contains data and is full, so process the buffer (send data via GPIB)
-      AR488st.dataBufferFull = true;
+      dataBufferFull = true;
       r = 2;
     }
   }
