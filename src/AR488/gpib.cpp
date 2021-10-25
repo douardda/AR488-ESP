@@ -4,10 +4,9 @@
 #include "commands.h"
 
 
-GPIB::GPIB(Stream& stream, AR488Conf& conf, AR488State& state, CommandComm& comm):
+GPIB::GPIB(Stream& stream, AR488Conf& conf, CommandComm& comm):
 		outstream(stream),
 		AR488(conf),
-		AR488st(state),
 		comm(comm),
 		verbose(false)
 {

@@ -189,9 +189,8 @@ Stream *dbSerial = (Stream*) dbSerial_;
 
 /****** Global variables with volatile values related to controller state *****/
 AR488Conf AR488;
-AR488State AR488st;
-CommandComm comm(*arSerial, AR488, AR488st);
-GPIB gpib(*arSerial, AR488, AR488st, comm);
+CommandComm comm(*arSerial, AR488);
+GPIB gpib(*arSerial, AR488, comm);
 
 /***** ^^^^^^^^^^^^^^^^^^^^^^^^ *****/
 /***** COMMON VARIABLES SECTION *****/
@@ -368,7 +367,7 @@ void loop() {
 
   // lnRdy=1: received a command so execute it...
   if (comm.lnRdy == 1) {
-		execCmd(comm.pBuf, comm.pbPtr, AR488, AR488st, comm);
+		execCmd(comm.pBuf, comm.pbPtr, AR488, comm);
   }
 
   // Controller mode:
@@ -391,7 +390,7 @@ void loop() {
 
     // Check status of SRQ and SPOLL if asserted
     if (gpib.isSRQ() && comm.isSrqa) {
-			spoll_h(NULL, AR488, AR488st);
+			spoll_h(NULL, AR488);
       gpib.clearSRQ();
     }
 
@@ -480,7 +479,7 @@ void execMacro(uint8_t idx) {
         }
       }
       if (isCmd(pBuf)){
-				execCmd(comm.pBuf, comm.strlen(pBuf), AR488, AR488st, comm);
+				execCmd(comm.pBuf, comm.strlen(pBuf), AR488, comm);
       }else{
         gpib.sendToInstrument(pBuf, strlen(pBuf));
       }

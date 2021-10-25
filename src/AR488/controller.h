@@ -8,7 +8,7 @@
 
 class CommandComm {
 public:
-  CommandComm(Stream&, AR488Conf&, AR488State&);
+  CommandComm(Stream&, AR488Conf&);
   uint8_t parseInput(char c);
   bool isCmd(char *buffr);
   bool isIdnQuery(char *buffr);
@@ -22,7 +22,6 @@ private:
   bool verbose;
   Stream &stream;
   AR488Conf &AR488;
-  AR488State &AR488st;
 
 /***** PARSE BUFFERS *****/
 /*

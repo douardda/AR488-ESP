@@ -75,11 +75,10 @@
 */
 
 
-CommandComm::CommandComm(Stream& stream, AR488Conf& conf, AR488State& state):
+CommandComm::CommandComm(Stream& stream, AR488Conf& conf):
 		verbose(false),
 		stream(stream),
-		AR488(conf),
-		AR488st(state)
+		AR488(conf)
 {
 }
 

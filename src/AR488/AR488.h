@@ -93,13 +93,6 @@ typedef struct {
 
 #define AR_CFG_SIZE 96  // ie. sizeof(AR488Conf) XXX recompute this
 
-
-typedef struct {
-  // State flags set by interrupt being triggered
-  // Interrupt without handler fired
-  //volatile bool isBAD = false;
-} AR488State;
-
 void setup();
 void loop();
 void initAR488();
