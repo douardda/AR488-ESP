@@ -366,7 +366,7 @@ void loop() {
 
   // lnRdy=1: received a command so execute it...
   if (controller.lnRdy == 1) {
-    execCmd(controller.pBuf, controller.pbPtr, controller);
+    execCmd(controller.pBuf, controller.pbPtr, gpib);
   }
 
   // Controller mode:
@@ -389,7 +389,7 @@ void loop() {
 
     // Check status of SRQ and SPOLL if asserted
     if (gpib.isSRQ() && controller.isSrqa) {
-			spoll_h(NULL, controller);
+			spoll_h(NULL, gpib);
       gpib.clearSRQ();
     }
 
@@ -473,7 +473,7 @@ void execMacro(uint8_t idx) {
         }
       }
       if (isCmd(pBuf)){
-				execCmd(controller.pBuf, strlen(controller.pBuf), controller);
+				execCmd(controller.pBuf, strlen(controller.pBuf), gpib);
       }else{
         gpib.sendToInstrument(controller.pBuf, strlen(controller.pBuf));
       }

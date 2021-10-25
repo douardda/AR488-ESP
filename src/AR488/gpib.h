@@ -51,8 +51,9 @@ public:
 
 private:
   Stream &outstream;
+public:
   Controller &controller;
-  bool verbose;
+
 
   //
   bool deviceAddressing = true;

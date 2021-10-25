@@ -6,8 +6,7 @@
 
 GPIB::GPIB(Stream& stream, Controller& controller):
 		outstream(stream),
-		controller(controller),
-		verbose(false)
+		controller(controller)
 {
 }
 
