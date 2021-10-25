@@ -55,6 +55,9 @@ private:
   bool deviceAddressing = true;
   uint8_t cstate = 0; // GPIB control state
 
+public:  // TODO: fix this
+  bool rEoi = false;      // Read eoi requested
+
 };
 
 

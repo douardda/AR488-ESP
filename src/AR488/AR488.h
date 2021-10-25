@@ -97,7 +97,6 @@ typedef struct {
 typedef struct {
   // GPIB data receive flags
   //bool isReading = false; // Is a GPIB read in progress?
-  bool rEoi = false;      // Read eoi requested
   bool rEbt = false;      // Read with specified terminator character
   bool isQuery = false;   // Direct instrument command is a query
   uint8_t tranBrk = 0;    // Transmission break on 1=++, 2=EOI, 3=ATN 4=UNL

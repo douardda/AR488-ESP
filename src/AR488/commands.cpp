@@ -355,14 +355,14 @@ void ver_h(char *params, AR488Conf& AR488, AR488State& AR488st) {
 /***** Address device to talk and read the sent data *****/
 void read_h(char *params, AR488Conf& AR488, AR488State& AR488st) {
   // Clear read flags
-  AR488st.rEoi = false;
+  gpib.rEoi = false;
   AR488st.rEbt = false;
   // Read any parameters
   if (params != NULL) {
     if (strlen(params) > 3) {
       if (AR488.isVerb) arSerial->println(F("Invalid termination character - ignored!"));
     } else if (strncmp(params, "eoi", 3) == 0) { // Read with eoi detection
-      AR488st.rEoi = true;
+      gpib.rEoi = true;
     } else { // Assume ASCII character given and convert to an 8 bit byte
       AR488st.rEbt = true;
       AR488st.eByte = atoi(params);

@@ -212,8 +212,8 @@ bool GPIB::gpibReceiveData() {
   AR488st.tranBrk = 0;
 
   // Set status of EOI detection
-  eoiStatus = AR488st.rEoi; // Save status of rEoi flag
-  if (AR488.eor==7) AR488st.rEoi = true;    // Using EOI as terminator
+  eoiStatus = rEoi; // Save status of rEoi flag
+  if (AR488.eor==7) rEoi = true;    // Using EOI as terminator
 
   // Set up for reading in Controller mode
   if (AR488.cmode == 2) {   // Controler mode
@@ -234,7 +234,7 @@ bool GPIB::gpibReceiveData() {
   } else {  // Device mode
     // Set GPIB controls to device read mode
     setGpibControls(DLAS);
-    AR488st.rEoi = true;  // In device mode we read with EOI by default
+    rEoi = true;  // In device mode we read with EOI by default
   }
 
 #ifdef DEBUG7
@@ -264,7 +264,7 @@ bool GPIB::gpibReceiveData() {
     r = gpibReadByte(&bytes[0], &eoiDetected);
 
     // When reading with amode=3 or EOI check serial input and break loop if neccessary
-    if ((AR488.amode==3) || AR488st.rEoi) comm.serialIn_h();
+    if ((AR488.amode==3) || rEoi) comm.serialIn_h();
 
     // Line terminator detected (loop breaks on command being detected or data buffer full)
     if (comm.lnRdy > 0) {
@@ -290,7 +290,7 @@ bool GPIB::gpibReceiveData() {
     x++;
 
     // EOI detection enabled and EOI detected?
-    if (AR488st.rEoi) {
+    if (rEoi) {
       if (eoiDetected) break;
     }else{
       // Has a termination sequence been found ?
@@ -328,7 +328,7 @@ bool GPIB::gpibReceiveData() {
   }
 
   // Return rEoi to previous state
-  AR488st.rEoi = eoiStatus;
+  rEoi = eoiStatus;
 
   // Verbose timeout error
   if (r > 0) {
@@ -441,7 +441,7 @@ uint8_t GPIB::gpibReadByte(uint8_t *db, bool *eoi) {
   setGpibState(0b00000000, 0b00000100, 0);
 
   // Check for EOI signal
-  if (AR488st.rEoi && digitalRead(EOI) == LOW) *eoi = true;
+  if (rEoi && digitalRead(EOI) == LOW) *eoi = true;
 
   // read from DIO
   *db = readGpibDbus();
@@ -895,7 +895,7 @@ void GPIB::unl_h() {
 #ifdef DEBUG5
   dbSerial->println(F("Unlisten received."));
 #endif
-  AR488st.rEoi = false;
+  rEoi = false;
   AR488st.tranBrk = 3;  // Stop receving transmission
 }
 
