@@ -2,7 +2,7 @@
 #define COMMANDS_H
 
 #include "AR488.h"
-#include "serialcomm.h"
+#include "controller.h"
 
 /***** Command function record *****/
 struct cmdRec {

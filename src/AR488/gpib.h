@@ -2,7 +2,7 @@
 
 #include <Arduino.h>
 #include "AR488.h"
-#include "serialcomm.h"
+#include "controller.h"
 
 class GPIB {
 public:

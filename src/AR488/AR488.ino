@@ -178,7 +178,7 @@ Stream *dbSerial = (Stream*) dbSerial_;
 
 
 #include "AR488.h"
-#include "serialcomm.h"
+#include "controller.h"
 #include "commands.h"
 #include "gpib.h"
 

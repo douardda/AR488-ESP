@@ -1,5 +1,5 @@
 #include <Arduino.h>
-#include "serialcomm.h"
+#include "controller.h"
 //#include "AR488.h"
 
 

@@ -3,7 +3,7 @@
 #include "AR488_Layouts.h"
 #include "commands.h"
 #include "gpib.h"
-#include "serialcomm.h"
+#include "controller.h"
 
 extern Stream *arSerial;
 extern GPIB gpib;
