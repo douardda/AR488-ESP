@@ -10,8 +10,40 @@ GPIB::GPIB(Controller& controller):
 {
 }
 
+
+void GPIB::initSN7516xPins(){
+  // SN7516x IC support
+#ifdef SN7516X
+  pinMode(SN7516X_TE, OUTPUT);
+#ifdef SN7516X_DC
+  pinMode(SN7516X_DC, OUTPUT);
+#endif
+  if (controller.config.cmode==2) {
+    // Set controller mode on SN75161/2
+    digitalWrite(SN7516X_TE, LOW);
+#ifdef SN7516X_DC
+      digitalWrite(SN7516X_DC, LOW);
+#endif
+#ifdef SN7516X_SC
+      digitalWrite(SN7516X_SC, HIGH);
+#endif
+  }else{
+    // Set listen mode on SN75161/2 (default)
+    digitalWrite(SN7516X_TE, HIGH);
+#ifdef SN7516X_DC
+      digitalWrite(SN7516X_DC, HIGH);
+#endif
+#ifdef SN7516X_SC
+      digitalWrite(SN7516X_SC, LOW);
+#endif
+  }
+#endif
+}
+
+
 /***** Initialise device mode *****/
 void GPIB::initDevice() {
+  initSN7516xPins();
   // Set GPIB control bus to device idle mode
   setGpibControls(DINI);
 
@@ -22,6 +54,7 @@ void GPIB::initDevice() {
 
 /***** Initialise controller mode *****/
 void GPIB::initController() {
+  initSN7516xPins();
   // Set GPIB control bus to controller idle mode
   setGpibControls(CINI);  // Controller initialise state
   // Initialise GPIB data lines (sets to INPUT_PULLUP)
@@ -29,6 +62,7 @@ void GPIB::initController() {
   // Assert IFC to signal controller in charge (CIC)
   assertIfc();
 }
+
 
 /***************************************/
 /***** GPIB DATA HANDLING ROUTINES *****/

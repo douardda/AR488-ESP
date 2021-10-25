@@ -150,32 +150,6 @@ void setup() {
   }
 #endif
 */
-  // SN7516x IC support
-#ifdef SN7516X
-  pinMode(SN7516X_TE, OUTPUT);
-  #ifdef SN7516X_DC
-    pinMode(SN7516X_DC, OUTPUT);
-  #endif
-  if (controller.config.cmode==2) {
-    // Set controller mode on SN75161/2
-    digitalWrite(SN7516X_TE, LOW);
-    #ifdef SN7516X_DC
-      digitalWrite(SN7516X_DC, LOW);
-    #endif
-    #ifdef SN7516X_SC
-      digitalWrite(SN7516X_SC, HIGH);
-    #endif
-  }else{
-    // Set listen mode on SN75161/2 (default)
-    digitalWrite(SN7516X_TE, HIGH);
-    #ifdef SN7516X_DC
-      digitalWrite(SN7516X_DC, HIGH);
-    #endif
-    #ifdef SN7516X_SC
-      digitalWrite(SN7516X_SC, LOW);
-    #endif
-  }
-#endif
 
   // Initialize the interface in device mode
   if (controller.config.cmode == 1) gpib.initDevice();

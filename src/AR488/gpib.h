@@ -9,6 +9,7 @@ public:
 
   void initDevice();
   void initController();
+  void initSN7516xPins();
 
   bool gpibSendCmd(uint8_t cmdByte);
   void gpibSendStatus();
