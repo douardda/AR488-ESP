@@ -5,6 +5,75 @@
 
 // TODO: dbSerial
 
+/*
+   Implements most of the CONTROLLER functions;
+   Substantially compatible with 'standard' Prologix "++" commands
+   (see +savecfg command in the manual for differences)
+
+   Principle of operation:
+   - Commands received from USB are buffered and whole terminated lines processed
+   - Interface commands prefixed with "++" are passed to the command handler
+   - Instrument commands and data not prefixed with '++' are sent directly to the GPIB bus.
+   - To receive from the instrument, issue a ++read command or put the controller in auto mode (++auto 1|2)
+   - Characters received over the GPIB bus are unbuffered and sent directly to USB
+   NOTES:
+   - GPIB line in a HIGH state is un-asserted
+   - GPIB line in a LOW state is asserted
+   - The ATMega processor control pins have a high impedance when set as inputs
+   - When set to INPUT_PULLUP, a 10k pull-up (to VCC) resistor is applied to the input
+*/
+
+/*
+   Standard commands
+
+   ++addr         - display/set device address
+   ++auto         - automatically request talk and read response
+   ++clr          - send Selected Device Clear to current GPIB address
+   ++eoi          - enable/disable assertion of EOI signal
+   ++eos          - specify GPIB termination character
+   ++eot_enable   - enable/disable appending user specified character to USB output on EOI detection
+   ++eot_char     - set character to append to USB output when EOT enabled
+   ++ifc          - assert IFC signal for 150 miscoseconds - make AR488 controller in charge
+   ++llo          - local lockout - disable front panel operation on instrument
+   ++loc          - enable front panel operation on instrument
+   ++lon          - put controller in listen-only mode (listen to all traffic)
+   ++mode         - set the interface mode (0=controller/1=device)
+   ++read         - read data from instrument
+   ++read_tmo_ms  - read timeout specified between 1 - 3000 milliseconds
+   ++rst          - reset the controller
+   ++savecfg      - save configration
+   ++spoll        - serial poll the addressed host or all instruments
+   ++srq          - return status of srq signal (1-srq asserted/0-srq not asserted)
+   ++status       - set the status byte to be returned on being polled (bit 6 = RQS, i.e SRQ asserted)
+   ++trg          - send trigger to selected devices (up to 15 addresses)
+   ++ver          - display firmware version
+*/
+
+/*
+   Proprietry commands:
+
+   ++aspoll       - serial poll all instruments (alias: ++spoll all)
+   ++default      - set configuration to controller default settings
+   ++dcl          - send unaddressed (all) device clear  [power on reset] (is the rst?)
+   ++id name      - show/set the name of the interface
+   ++id serial    - show/set the serial number of the interface
+   ++id verstr    - show/set the version string (replaces setvstr)
+   ++idn          - enable/disable reply to *idn? (disabled by default)
+   ++ren          - assert or unassert the REN signal
+   ++ppoll        - conduct a parallel poll
+   ++setvstr      - set custom version string (to identify controller, e.g. "GPIB-USB"). Max 47 chars, excess truncated.
+   ++srqauto      - automatically condiuct serial poll when SRQ is asserted
+   ++ton          - put controller in talk-only mode (send data only)
+   ++verbose      - verbose (human readable) mode
+*/
+
+/*
+   NOT YET IMPLEMENTED
+
+   ++help     - show summary of commands
+   ++myaddr   - set the controller address
+*/
+
 
 CommandComm::CommandComm(Stream& stream, AR488Conf& conf, AR488State& state):
 		verbose(false),
