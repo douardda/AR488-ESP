@@ -97,11 +97,6 @@ typedef struct {
 typedef struct {
   // GPIB data receive flags
   //bool isReading = false; // Is a GPIB read in progress?
-  // Device mode - send data
-  bool snd = false;
-  // Escaped character flag
-  bool isEsc = false;           // Charcter escaped
-  bool isPlusEscaped = false;   // Plus escaped
   // Read only mode flag
   bool isRO = false;
   // Talk only mode flag

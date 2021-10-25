@@ -36,5 +36,9 @@ public:  // TODO: better than this...
   uint8_t lnRdy = 0;  // CR/LF terminated line ready to process
   bool aRead = false; // GPIB data read in progress
 
+  // Escaped character flag
+  bool isEsc = false;           // Charcter escaped
+  bool isPlusEscaped = false;   // Plus escaped
+
 };
 #endif

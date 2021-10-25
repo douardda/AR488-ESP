@@ -97,9 +97,9 @@ uint8_t CommandComm::parseInput(char c) {
       case CR:
       case LF:
         // If escaped just add to buffer
-        if (AR488st.isEsc) {
+        if (isEsc) {
           addPbuf(c);
-          AR488st.isEsc = false;
+          isEsc = false;
         } else {
           // Carriage return on blank line?
           // Note: for data CR and LF will always be escaped
@@ -113,7 +113,7 @@ uint8_t CommandComm::parseInput(char c) {
             dbSerial->print(F("parseInput: Received ")); dbSerial->println(pBuf);
 #endif
             // Buffer starts with ++ and contains at least 3 characters - command?
-            if (pbPtr>2 && isCmd(pBuf) && !AR488st.isPlusEscaped) {
+            if (pbPtr>2 && isCmd(pBuf) && !isPlusEscaped) {
               // Exclamation mark (break read loop command)
               if (pBuf[2]==0x21) {
                 r = 3;
@@ -130,7 +130,7 @@ uint8_t CommandComm::parseInput(char c) {
             }else if (pbPtr > 0) {
               r = 2;
             }
-            AR488st.isPlusEscaped = false;
+            isPlusEscaped = false;
 #ifdef DEBUG1
             dbSerial->print(F("R: "));dbSerial->println(r);
 #endif
@@ -140,19 +140,19 @@ uint8_t CommandComm::parseInput(char c) {
         break;
       case ESC:
         // Handle the escape character
-        if (AR488st.isEsc) {
+        if (isEsc) {
           // Add character to buffer and cancel escape
           addPbuf(c);
-          AR488st.isEsc = false;
+          isEsc = false;
         } else {
           // Set escape flag
-          AR488st.isEsc  = true;  // Set escape flag
+          isEsc  = true;  // Set escape flag
         }
         break;
       case PLUS:
-        if (AR488st.isEsc) {
-          AR488st.isEsc = false;
-          if (pbPtr < 2) AR488st.isPlusEscaped = true;
+        if (isEsc) {
+          isEsc = false;
+          if (pbPtr < 2) isPlusEscaped = true;
         }
         addPbuf(c);
 //        if (isVerb) stream.print(c);
@@ -162,7 +162,7 @@ uint8_t CommandComm::parseInput(char c) {
 //        if (isVerb) stream.print(c);  // Humans like to see what they are typing...
         // Buffer contains '++' (start of command). Stop sending data to serial port by halting GPIB receive.
         addPbuf(c);
-        AR488st.isEsc = false;
+        isEsc = false;
     }
   }
   if (pbPtr >= PBSIZE) {
