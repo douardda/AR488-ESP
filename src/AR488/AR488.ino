@@ -153,9 +153,8 @@ void setup() {
 
   // Initialize the interface in device mode
   if (controller.config.cmode == 1) gpib.initDevice();
-
   // Initialize the interface in controller mode
-  if (controller.config.cmode == 2) gpib.initController();
+	else gpib.initController();
 
   gpib.clearATN();
   gpib.clearSRQ();
@@ -165,9 +164,9 @@ void setup() {
   execMacro(0, gpib);
 #endif
 
-//#ifdef SAY_HELLO
+#ifdef SAY_HELLO
   controller.stream.println(F("AR488 ready."));
-//#endif
+#endif
 
 }
 /****** End of Arduino standard SETUP procedure *****/
