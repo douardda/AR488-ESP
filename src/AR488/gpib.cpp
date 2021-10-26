@@ -3,6 +3,22 @@
 #include "AR488_Layouts.h"
 #include "commands.h"
 
+#ifdef USE_INTERRUPTS
+// ISR handling code for ATN and SRQ interrupts
+// sorry, this is horrible... thanks arduino...
+GPIB *_gpib = NULL;
+
+static void ISR_ATN() {
+  if (_gpib != NULL)
+	_gpib->setATN(digitalRead(ATN) == LOW);
+}
+
+static void ISR_SRQ() {
+  if (_gpib != NULL)
+	_gpib->setSRQ(digitalRead(SRQ) == LOW);
+}
+#endif
+
 
 GPIB::GPIB(Controller& controller):
 		outstream(controller.stream),
@@ -11,7 +27,7 @@ GPIB::GPIB(Controller& controller):
 }
 
 
-void GPIB::initSN7516xPins(){
+void GPIB::initPins(){
   // SN7516x IC support
 #ifdef SN7516X
   pinMode(SN7516X_TE, OUTPUT);
@@ -38,12 +54,17 @@ void GPIB::initSN7516xPins(){
 #endif
   }
 #endif
-}
 
+#ifdef USE_INTERRUPTS
+  _gpib = this;
+  attachInterrupt(digitalPinToInterrupt(ATN), ISR_ATN, CHANGE);
+  attachInterrupt(digitalPinToInterrupt(ATN), ISR_SRQ, CHANGE);
+#endif
+}
 
 /***** Initialise device mode *****/
 void GPIB::initDevice() {
-  initSN7516xPins();
+  initPins();
   // Set GPIB control bus to device idle mode
   setGpibControls(DINI);
 
@@ -54,7 +75,7 @@ void GPIB::initDevice() {
 
 /***** Initialise controller mode *****/
 void GPIB::initController() {
-  initSN7516xPins();
+  initPins();
   // Set GPIB control bus to controller idle mode
   setGpibControls(CINI);  // Controller initialise state
   // Initialise GPIB data lines (sets to INPUT_PULLUP)

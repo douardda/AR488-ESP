@@ -107,11 +107,6 @@ void setup() {
   digitalWrite(LED_BUILTIN, HIGH);
 #endif
 
-#ifdef USE_INTERRUPTS
-  // Turn on interrupts on port
-  interruptsEn();
-#endif
-
   // Initialise parse buffer
   controller.flushPbuf();
 	initSerial();

@@ -92,54 +92,6 @@ void setGpibState(uint8_t bits, uint8_t mask, uint8_t mode) {
 }
 
 
-/***** Enable interrupts *****/
-#ifdef USE_INTERRUPTS
-
-volatile uint8_t atnPinMem = ATNPREG;
-volatile uint8_t srqPinMem = SRQPREG;
-static const uint8_t ATNint = 0b10000000;
-static const uint8_t SRQint = 0b00000100;
-
-
-void interruptsEn(){
-  cli();
-  PCICR |= 0b00000100;  // PORTD
-  PCMSK2 |= (SRQint^ATNint);
-  sei();
-}
-
-#pragma GCC diagnostic error "-Wmisspelled-isr"
-
-
-/***** Interrupt handler *****/
-ISR(PCINT2_vect) {
-
-  // Has PCINT23 fired (ATN asserted)?
-  if ((PIND ^ atnPinMem) & ATNint) {
-	gpib.setATN((ATNPREG & ATNint) == 0);
-  }
-
-  // Has PCINT19 fired (SRQ asserted)?
-  if ((PIND ^ srqPinMem) & SRQint) {
-	gpib.setSRQ((SRQPREG & SRQint) == 0);
-  }
-
-  // Save current state of PORTD register
-  atnPinMem = ATNPREG;
-  srqPinMem = SRQPREG;
-}
-
-
-/***** Catchall interrupt vector *****/
-/*
-  ISR(BADISR_vect) {
-  // ISR to catch ISR firing without handler
-  isBAD = true;
-  }
-*/
-#endif //USE_INTERRUPTS
-
-
 #endif //AR488UNO/AR488_NANO
 /***** ^^^^^^^^^^^^^^^^^^^^^ *****/
 /***** UNO/NANO BOARD LAYOUT *****/
@@ -236,45 +188,6 @@ void setGpibState(uint8_t bits, uint8_t mask, uint8_t mode) {
   }
 }
 
-
-/***** Enable interrupts *****/
-#ifdef USE_INTERRUPTS
-
-volatile uint8_t atnPinMem = ATNPREG;
-volatile uint8_t srqPinMem = SRQPREG;
-static const uint8_t ATNint = 0b00100000;
-static const uint8_t SRQint = 0b00010000;
-
-
-void interruptsEn(){
-  cli();
-  PCICR |= 0b00000001;  // PORTB
-  PCMSK0 |= (SRQint^ATNint);
-  sei();
-}
-
-
-#pragma GCC diagnostic error "-Wmisspelled-isr"
-
-/***** Interrupt handler *****/
-ISR(PCINT0_vect) {
-
-  // Has PCINT5 fired (ATN asserted)?
-  if ((ATNPREG ^ atnPinMem) & ATNint) {
-	gpib.setATN((ATNPREG & ATNint) == 0);
-  }
-
-  // Has PCINT4 fired (SRQ asserted)?
-  if ((SRQPREG ^ srqPinMem) & SRQint) {
-	gpib.setSRQ((SRQPREG & SRQint) == 0);
-  }
-
-  // Save current state of PORTD register
-  atnPinMem = ATNPREG;
-  srqPinMem = SRQPREG;
-}
-
-#endif //USE_INTERRUPTS
 
 #endif //MEGA2560
 /***** ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ *****/
@@ -408,45 +321,6 @@ void setGpibState(uint8_t bits, uint8_t mask, uint8_t mode) {
 }
 
 
-/***** Enable interrupts *****/
-#ifdef USE_INTERRUPTS
-
-volatile uint8_t atnPinMem = ATNPREG;
-volatile uint8_t srqPinMem = SRQPREG;
-static const uint8_t ATNint = 0b00000010;
-static const uint8_t SRQint = 0b00001000;
-
-
-void interruptsEn(){
-  cli();
-  PCICR |= 0b00000001;  // PORTB
-  PCMSK0 |= (SRQint^ATNint);
-  sei();
-}
-
-
-#pragma GCC diagnostic error "-Wmisspelled-isr"
-
-/***** Interrupt handler *****/
-ISR(PCINT0_vect) {
-
-  // Has PCINT1 fired (ATN asserted)?
-  if ((ATNPREG ^ atnPinMem) & ATNint) {
-	gpib.setATN((ATNPREG & ATNint) == 0);
-  }
-
-  // Has PCINT3 fired (SRQ asserted)?
-  if ((SRQPREG ^ srqPinMem) & SRQint) {
-	gpib.setSRQ((SRQPREG & SRQint) == 0);
-  }
-
-  // Save current state of PORTD register
-  atnPinMem = ATNPREG;
-  srqPinMem = SRQPREG;
-}
-
-#endif //USE_INTERRUPTS
-
 #endif //MEGA2560
 /***** ^^^^^^^^^^^^^^^^^^^^^^^^ *****/
 /***** MEGA2560 BOARD LAYOUT E1 *****/
@@ -571,46 +445,6 @@ void setGpibState(uint8_t bits, uint8_t mask, uint8_t mode) {
       break;
   }
 }
-
-
-/***** Enable interrupts *****/
-#ifdef USE_INTERRUPTS
-
-volatile uint8_t atnPinMem = ATNPREG;
-volatile uint8_t srqPinMem = SRQPREG;
-static const uint8_t ATNint = 0b00000001;
-static const uint8_t SRQint = 0b00000100;
-
-
-void interruptsEn(){
-  cli();
-  PCICR |= 0b00000001;  // PORTB
-  PCMSK0 |= (SRQint^ATNint);
-  sei();
-}
-
-
-#pragma GCC diagnostic error "-Wmisspelled-isr"
-
-/***** Interrupt handler *****/
-ISR(PCINT0_vect) {
-
-  // Has PCINT0 fired (ATN asserted)?
-  if ((ATNPREG ^ atnPinMem) & ATNint) {
-	gpib.setATN((ATNPREG & ATNint) == 0);
-  }
-
-  // Has PCINT2 fired (SRQ asserted)?
-  if ((SRQPREG ^ srqPinMem) & SRQint) {
-	gpib.setSRQ((SRQPREG & SRQint) == 0);
-  }
-
-  // Save current state of PORTD register
-  atnPinMem = ATNPREG;
-  srqPinMem = SRQPREG;
-}
-
-#endif //USE_INTERRUPTS
 
 #endif //MEGA2560
 
@@ -761,42 +595,6 @@ void setGpibState(uint8_t bits, uint8_t mask, uint8_t mode) {
 }
 
 
-/***** Enable interrupts *****/
-#ifdef USE_INTERRUPTS
-
-volatile uint8_t atnPinMem = ATNPREG;
-volatile uint8_t srqPinMem = SRQPREG;
-static const uint8_t ATNint = 0b00000010;
-static const uint8_t SRQint = 0b01000000;
-
-void pin_change_interrupt(void) {
-
-  // Has the status of the ATN pin interrupt changed?
-  if ((ATNPREG ^ atnPinMem) & ATNint) {
-    // Set the current status of ATN
-	gpib.setATN((ATNPREG & ATNint) == 0);
-  }
-
-  // Has the status of the SRQ pin interrupt changed?
-  if ((SRQPREG ^ srqPinMem) & SRQint) {
-    // Set the current status of SRQ
-	gpib.setSRQ((SRQPREG & SRQint) == 0);
-  }
-
-  // Save current state of the interrupt registers
-  atnPinMem = ATNPREG;
-  srqPinMem = SRQPREG;
-}
-
-void interruptsEn(){
-  cli();
-  attachInterrupt(digitalPinToInterrupt(ATN), pin_change_interrupt, CHANGE);
-  attachInterrupt(digitalPinToInterrupt(SRQ), pin_change_interrupt, CHANGE);
-  sei();  sei();
-}
-
-#endif  // USE_INTERRUPTS
-
 #endif  // AR488_MEGA32U4_MICRO
 /***** ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ *****/
 /***** MICRO PRO (32u4) BOARD LAYOUT for MICRO (Artag) *****/
@@ -909,30 +707,6 @@ uint8_t reverseBits(uint8_t dbyte) {
 }
 
 
-/***** Enable interrupts *****/
-#ifdef USE_INTERRUPTS
-
-//volatile uint8_t atnPinMem = ATNPREG;
-//volatile uint8_t srqPinMem = SRQPREG;
-//static const uint8_t ATNint = 0b10000000;
-//static const uint8_t SRQint = 0b00000100;
-
-void atnISR() {
-  gpib.setATN(digitalRead(ATN) ? false : true);
-}
-
-void srqISR() {
-	gpib.setSRQ(digitalRead(SRQ) ? false : true);
-}
-
-void interruptsEn(){
-  attachInterrupt(digitalPinToInterrupt(ATN), atnISR, CHANGE)
-  attachInterrupt(digitalPinToInterrupt(SRQ), srqISR, CHANGE)
-}
-
-#endif //USE_INTERRUPTS
-
-
 #endif //AR488_MEGA32U4_LR3
 /***** ^^^^^^^^^^^^^^^^^^^^^^^^ *****/
 /***** LEONARDO R3 BOARD LAYOUT *****/
@@ -978,7 +752,6 @@ void setGpibDbus(uint8_t db) {
 
 }
 
-
 /***** Set the direction and state of the GPIB control lines ****/
 /*
    Bits control lines as follows: 7-ATN, 6-SRQ, 5-REN, 4-EOI, 3-DAV, 2-NRFD, 1-NDAC, 0-IFC
@@ -1004,23 +777,6 @@ void setGpibState(uint8_t bits, uint8_t mask, uint8_t mode) {
   }
 
 }
-
-#ifdef USE_INTERRUPTS
-
-void atnISR() {
-  gpib.setATN(digitalRead(ATN) ? false : true);
-}
-
-void srqISR() {
-  gpib.setSRQ(digitalRead(SRQ) ? false : true);
-}
-
-void interruptsEn(){
-  attachInterrupt(digitalPinToInterrupt(ATN), atnISR, CHANGE)
-  attachInterrupt(digitalPinToInterrupt(SRQ), srqISR, CHANGE)
-}
-
-#endif //USE_INTERRUPTS
 
 #endif
 /***** ^^^^^^^^^^^^^^^^^^^^^^^^^ *****/

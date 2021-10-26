@@ -9,7 +9,7 @@ public:
 
   void initDevice();
   void initController();
-  void initSN7516xPins();
+  void initPins();
 
   bool gpibSendCmd(uint8_t cmdByte);
   void gpibSendStatus();
@@ -52,10 +52,10 @@ public:
 
 private:
   Stream &outstream;
+
+
 public:
   Controller &controller;
-
-
   //
   bool deviceAddressing = true;
   uint8_t cstate = 0;     // GPIB control state

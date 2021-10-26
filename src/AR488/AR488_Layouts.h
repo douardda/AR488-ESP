@@ -16,13 +16,6 @@
 /***** vvvvvvvvvvvvvvvvvvvvvvvvv *****/
 #ifdef AR488_CUSTOM
 
-// Use only pinhooks for custom mode
-// (We don't know which pin interrupts will be required)
-#ifdef USE_INTERRUPTS
-  #undef USE_INTERRUPTS
-//  #define USE_PINHOOKS
-#endif
-
 // you can define pinhooks here, or you can use -D compilation flags (see in
 // platformio.ini if using platformio to build the project).
 //#define DIO1  D0  /* GPIB 1  :  */
@@ -79,13 +72,6 @@
 
 /***** PIN interrupts ******/
 
-// Interrupt registers
-#ifdef USE_INTERRUPTS
-  #define ATNPREG PIND
-  #define SRQPREG PIND
-  void interruptsEn();
-#endif
-
 #endif
 /***** ^^^^^^^^^^^^^^^^^^^^^^^^^^ *****/
 /***** UNO/NANO LAYOUT DEFINITION *****/
@@ -117,13 +103,6 @@
 
 #define SRQ   10  /* GPIB 10 : PORTB bit 4 */
 #define ATN   11  /* GPIB 11 : PORTB bit 5 */
-
-// PCINT registers
-#ifdef USE_INTERRUPTS
-  #define ATNPREG PINB
-  #define SRQPREG PINB
-  void interruptsEn();
-#endif  // USE_INTERRUPTS
 
 #endif  // AR488_MEGA2560_D
 /***** ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ *****/
@@ -157,13 +136,6 @@
 #define SRQ   50  /* GPIB 10 : PORTB bit 1 */
 #define ATN   52  /* GPIB 11 : PORTB bit 3 */
 
-// PCINT registers
-#ifdef USE_INTERRUPTS
-  #define ATNPREG PINB
-  #define SRQPREG PINB
-  void interruptsEn();
-#endif  // USE_INTERRUPTS
-
 #endif  // AR488_MEGA2560_E1
 /***** ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ *****/
 /***** MEGA2560 LAYOUT DEFINITION E1 *****/
@@ -196,13 +168,6 @@
 #define SRQ   51  /* GPIB 10 : PORTB bit 0 */
 #define ATN   53  /* GPIB 11 : PORTB bit 2 */
 
-// PCINT registers
-#ifdef USE_INTERRUPTS
-  #define ATNPREG PINB
-  #define SRQPREG PINB
-  void interruptsEn();
-#endif  // USE_INTERRUPTS
-
 #endif  // AR488_MEGA2560_E2
 /***** ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ *****/
 /***** MEGA2560 LAYOUT DEFINITION E2 *****/
@@ -232,12 +197,6 @@
 #define REN   5   /* GPIB 17 : PORTC bit 6 */
 #define SRQ   7   /* GPIB 10 : PORTE bit 6 */
 #define ATN   2   /* GPIB 11 : PORTD bit 1 */
-
-#ifdef USE_INTERRUPTS
-  #define ATNPREG PIND
-  #define SRQPREG PINE
-  void interruptsEn();
-#endif  // USE_INTERRUPTS
 
 #endif  // AR488_MEGA32U4_MICRO
 /***** ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ *****/
@@ -272,15 +231,6 @@
 #define ATN    7  /* GPIB 11 : PORTE bit 6 */
 
 /***** PIN interrupts ******/
-
-// Interrupt registers
-#ifdef USE_INTERRUPTS
-//  #define ATNPREG PIND
-//  #define SRQPREG PIND
-  void atnISR();
-  void srqISR();
-  void interruptsEn();
-#endif
 
 uint8_t reverseBits(uint8_t dbyte);
 
