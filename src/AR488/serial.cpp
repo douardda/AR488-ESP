@@ -25,7 +25,32 @@ SoftwareSerial swArSerial(AR_SW_SERIAL_RX, AR_SW_SERIAL_TX);
 SoftwareSerial *arSerial_ = &swArSerial;
 #endif
 
+
+/***** BT SERIAL PORT DECLARATIONS *****/
+
+#ifdef AR_BT_EN
+#if defined(ESP32)
+#include "BluetoothSerial.h"
+BluetoothSerial btSerial_;
+BluetoothSerial *btSerial = &btSerial_;
+
+#elif defined(AR_CDC_SERIAL)
+Serial_ *btSerial = &(AR_SERIAL_PORT);
+
+#elif defined(AR_HW_SERIAL)
+HardwareSerial *btSerial = &(AR_SERIAL_PORT);
+
+#elif defined(AR_SW_SERIAL)
+// Note: SoftwareSerial support conflicts with PCINT support
+#include <SoftwareSerial.h>
+SoftwareSerial btSerial(AR_SW_SERIAL_RX, AR_SW_SERIAL_TX);
+SoftwareSerial *btSerial = &btSerial;
+
+#endif
+Stream *arSerial = (Stream*) btSerial;
+#else
 Stream *arSerial = (Stream*) arSerial_;
+#endif
 
 Stream& getSerial() {
 	return *arSerial;
@@ -65,7 +90,6 @@ void initSerial() {
 #ifdef AR_BT_EN
   // Initialise Bluetooth
   btInit();
-  arSerial_->begin(AR_BT_BAUD);
 #else
   // Start the serial port
   #ifdef AR_SW_SERIAL

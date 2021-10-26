@@ -26,14 +26,16 @@
 #endif
 */
 
-#ifdef AR_CDC_SERIAL
+#if defined(ESP32)
+#include "BluetoothSerial.h"
+extern BluetoothSerial *btSerial;
+
+#elif defined(AR_CDC_SERIAL)
   extern Serial_ *btSerial;
-#endif
-#ifdef AR_HW_SERIAL
+#elif defined(AR_HW_SERIAL)
   extern HardwareSerial *btSerial;
-#endif
+#elif defined(AR_SW_SERIAL)
 // Note: SoftwareSerial support conflicts with PCINT support
-#ifdef AR_SW_SERIAL
   #include <SoftwareSerial.h>
   extern SoftwareSerial *btSerial;
 #endif
@@ -69,7 +71,7 @@
 char rBuf[RBSIZE];
 
 
-/******************************/ 
+/******************************/
 /*****  BLUETOOTH SUPPORT *****/
 /******************************/
 
@@ -79,6 +81,12 @@ void btInit() {
   dbSerial->begin(115200);
   dbSerial->println(F("BlueTooth Debug =>"));
 #endif
+#if defined(ESP32)
+  // not sure how to make SSP work...
+  //btSerial->enableSSP();
+  //btSerial->setPin(AR_BT_CODE);
+  btSerial->begin(AR_BT_NAME);
+#else
   // Enable bluetooth HC05 board config mode
   pinMode(AR_BT_EN, OUTPUT);
   digitalWrite(AR_BT_EN, HIGH);
@@ -91,7 +99,7 @@ void btInit() {
     if (btChkCfg()) {
       // Yes - blink LED once
       delay(400);
-      blinkLed(1);      
+      blinkLed(1);
     }else{
       // No - then configure
       delay(400);
@@ -107,6 +115,8 @@ void btInit() {
   btSerial->print(F("AT+RESET\r\n"));
   delay(500);
   btSerial->end();
+  arSerial_->begin(AR_BT_BAUD);
+#endif
 #ifdef DEBUG9
   dbSerial->println(F("<= END."));
 #endif
@@ -115,6 +125,7 @@ void btInit() {
 
 /***** Detect the HC05 board config mode baud rate *****/
 bool detectBaud(){
+#if !defined(ESP32)
   long int brate[5] = {9600, 19200, 38400, 57600, 115200};
   uint8_t i = 0;
   while (i<5){
@@ -125,13 +136,15 @@ bool detectBaud(){
     if (atReply("OK")) return true;
     i++;
   }
+#endif
   return false;
 }
 
 
 /***** Check configuration for change *****/
 bool btChkCfg(){
-  
+#if !defined(ESP32)
+
   char baudstr[20];
   char baudrate[8];
 
@@ -164,7 +177,7 @@ bool btChkCfg(){
   dbSerial->println(F("Baud rate OK."));
 #endif
   delay(200);
-  
+
 #ifdef DEBUG9
   dbSerial->println(F("Send: AT+PSWD?"));
 #endif
@@ -174,12 +187,15 @@ bool btChkCfg(){
 #ifdef DEBUG9
   dbSerial->println(F("BT code OK."));
 #endif
+
+#endif
   return true;
 }
 
 
 /***** Configure the HC05 *****/
 bool btCfg(){
+#if !defined(ESP32)
 #ifdef DEBUG9
   dbSerial->println(F("Configuring..."));
 #endif
@@ -212,6 +228,7 @@ bool btCfg(){
 #ifdef DEBUG9
   dbSerial->println(F("Set baud rate: "));
 #endif
+#endif
 
   return true;
 }
@@ -219,6 +236,8 @@ bool btCfg(){
 
 /***** Is the reply what we expected? *****/
 bool atReply(const char* reply) {
+#if !defined(ESP32)
+
   int sz = strlen(reply);
 
   memset(rBuf, '\0', RBSIZE);
@@ -233,6 +252,7 @@ bool atReply(const char* reply) {
     btSerial->read();
   }
   if (strncmp(reply, rBuf, sz) == 0) return true;
+#endif
   return false;
 }
 
@@ -247,7 +267,7 @@ void blinkLed(uint8_t count){
   }
 }
 
-/*************************************/ 
+/*************************************/
 /*****  ENF OF BLUETOOTH SUPPORT *****/
 /*************************************/
 

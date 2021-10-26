@@ -287,32 +287,6 @@ M3\n\
 
 
 /*********************************************/
-/***** SERIAL PORT EXTERNAL DECLARATIONS *****/
-/******vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv******/
-
-
-#ifdef AR_BT_EN
-  #ifdef AR_CDC_SERIAL
-    Serial_ *btSerial = &(AR_SERIAL_PORT);
-  #endif
-  #ifdef AR_HW_SERIAL
-    HardwareSerial *btSerial = &(AR_SERIAL_PORT);
-  #endif
-  // Note: SoftwareSerial support conflicts with PCINT support
-  #ifdef AR_SW_SERIAL
-    #include <SoftwareSerial.h>
-    SoftwareSerial btSerial(AR_SW_SERIAL_RX, AR_SW_SERIAL_TX);
-    SoftwareSerial *btSerial = &btSerial;
-  #endif
-#endif
-
-
-/******^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^******/
-/***** SERIAL PORT EXTERNAL DECLARATIONS *****/
-/*********************************************/
-
-
-/*********************************************/
 /***** MISCELLANEOUS DECLARATIONS *****/
 /******vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv******/
 
