@@ -257,8 +257,7 @@ uint8_t Controller::serialIn_h() {
 
 
 void Controller::reset() {
-#ifdef WDTO_1S
-  // Where defined, reset controller using watchdog timeout
+#ifdef WDTO_1S  // Where defined, reset controller using watchdog timeout
   unsigned long tout;
   tout = millis() + 2000;
   wdt_enable(WDTO_1S);
@@ -267,13 +266,13 @@ void Controller::reset() {
   if (config.isVerb) {
     arSerial->println(F("Reset FAILED."));
   };
-#else
-  // Otherwise restart program (soft reset)
+#else  // Otherwise restart program (soft reset)
 #if defined(__AVR__)
   asm volatile ("  jmp 0");
+#elif defined(ESP32)
+  ESP.restart();
 #endif
 #endif
-
 }
 
 void Controller::initConfig()
