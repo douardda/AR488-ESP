@@ -175,7 +175,7 @@ void loop() {
 
   // lnRdy=1: received a command so execute it...
   if (controller.lnRdy == 1) {
-    execCmd(controller.pBuf, controller.pbPtr, controller);
+    controller.execCmd();
   }
 
   // Controller mode:

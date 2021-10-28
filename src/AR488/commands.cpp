@@ -56,35 +56,6 @@ static cmdRec cmdHidx [] = {
 
 };
 
-/***** Execute a command *****/
-void execCmd(char *buffr, uint8_t dsize, Controller &controller) {
-  char line[PBSIZE];
-  // Copy collected chars to line buffer
-  memcpy(line, buffr, dsize);
-
-  // Flush the parse buffer
-  controller.flushPbuf();
-
-#ifdef DEBUG1
-  dbSerial->print(F("execCmd: Command received: ")); printHex(line, dsize);
-#endif
-
-  // Its a ++command so shift everything two bytes left (ignore ++) and parse
-  for (int i = 0; i < dsize-2; i++) {
-    line[i] = line[i + 2];
-  }
-  // Replace last two bytes with a null (\0) character
-  line[dsize - 2] = '\0';
-  line[dsize - 1] = '\0';
-#ifdef DEBUG1
-  dbSerial->print(F("execCmd: Sent to the command processor: ")); printHex(line, dsize-2);
-#endif
-  // Execute the command
-  getCmd(line, controller);
-
-  // Show a prompt on completion?
-  if (controller.config.isVerb) controller.showPrompt();
-}
 
 
 /***** Extract command and pass to handler *****/

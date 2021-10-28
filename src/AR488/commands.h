@@ -12,7 +12,6 @@ struct cmdRec {
 };
 
 void getCmd(char *buffr, Controller& gpib);
-void execCmd(char *buffr, uint8_t dsize, Controller& gpib);
 
 bool notInRange(char *param, uint16_t lowl, uint16_t higl, uint16_t &rval, Controller& gpib);
 void errBadCmd(Controller&);

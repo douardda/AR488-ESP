@@ -1,6 +1,7 @@
 #include <Arduino.h>
 #include "controller.h"
 #include "gpib.h"
+#include "commands.h"
 
 #ifdef ESP32
 #include <Preferences.h>
@@ -368,4 +369,35 @@ void Controller::sendToInstrument()
   if (pBuf[pbPtr-1] == '?') gpib->isQuery = true;
   gpib->gpibSendData(pBuf, pbPtr, dataBufferFull);
   flushPbuf();
+}
+
+
+/***** Execute a command *****/
+void Controller::execCmd() {
+  char line[PBSIZE];
+  int dsize = pbPtr;
+  // Copy collected chars to line buffer
+  memcpy(line, pBuf, pbPtr);
+
+  // Flush the parse buffer
+  flushPbuf();
+
+#ifdef DEBUG1
+  dbSerial->print(F("execCmd: Command received: ")); printHex(line, dsize);
+#endif
+
+  // Its a ++command so shift everything two bytes left (ignore ++) and parse
+  for (int i = 0; i < dsize-2; i++) {
+    line[i] = line[i + 2];
+  }
+  // Replace last two bytes with a null (\0) character
+  line[dsize - 2] = '\0';
+  line[dsize - 1] = '\0';
+#ifdef DEBUG1
+  dbSerial->print(F("execCmd: Sent to the command processor: ")); printHex(line, dsize-2);
+#endif
+  // Execute the command
+  getCmd(line, *this);
+
+  showPrompt();
 }

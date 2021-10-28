@@ -28,7 +28,7 @@ void execMacro(uint8_t idx, Controller& controller) {
         }
       }
       if (controller.isCmd(controller.pBuf)){
-		execCmd(controller.pBuf, strlen(controller.pBuf), controller);
+		controller.execCmd();
       }else{
         controller.sendToInstrument();
       }

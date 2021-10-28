@@ -50,6 +50,7 @@ public:
   bool verbose() {return config.isVerb;};
   void sendToInstrument();
   void setGPIB(GPIB *gpib) {this->gpib = gpib;};
+  void execCmd();
 
 public:
   AR488Conf config;
