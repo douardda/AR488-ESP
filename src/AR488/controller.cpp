@@ -1,6 +1,9 @@
 #include <Arduino.h>
 #include "controller.h"
 
+#ifdef ESP32
+#include <Preferences.h>
+#endif
 
 // TODO: dbSerial
 
@@ -278,4 +281,67 @@ void Controller::initConfig()
   /***** Initialise the interface *****/
   // Set default values ({'\0'} sets version string array to null)
   config = {false, false, 2, 0, 1, 0, 0, 0, 0, 1200, 0, {'\0'}, 0, 0, {'\0'}, 0, 0, false};
+  #ifdef ESP32
+  Preferences pref;
+  pref.begin("ar488", false);
+  config.eot_en = pref.getBool("eot_en", config.eot_en);
+  config.eoi = pref.getBool("eoi", config.eoi);
+  config.cmode = pref.getUChar("cmode", config.cmode);
+  config.caddr = pref.getUChar("caddr", config.caddr);
+  config.paddr = pref.getUChar("paddr", config.paddr);
+  config.saddr = pref.getUChar("saddr", config.saddr);
+  config.eos = pref.getUChar("eos", config.eos);
+  config.stat = pref.getUChar("stat", config.stat);
+  config.amode = pref.getUChar("amode", config.amode);
+  config.rtmo = pref.getInt("rtmo", config.rtmo);
+  config.eot_ch = pref.getChar("eot_ch", config.eot_ch);
+  config.tmbus = pref.getUShort("tmbus", config.tmbus);
+  config.eor = pref.getUChar("eor", config.eor);
+  config.serial = pref.getUInt("serial", config.serial);
+  config.idn = pref.getUInt("idn", config.idn);
+  config.isVerb = pref.getUInt("isVerb", config.isVerb);
+  if (pref.isKey("vstr")) {
+	  pref.getBytes("vstr", config.vstr, 48);
+  }
+  if (pref.isKey("sname")) {
+	  pref.getBytes("sname", config.sname, 16);
+  }
+  pref.end();
+  #endif
+}
+
+void Controller::saveConfig()
+{
+#ifdef ESP32
+  Preferences pref;
+  pref.begin("ar488", false);
+  pref.putBool("eot_en", config.eot_en);
+  pref.putBool("eoi", config.eoi);
+  pref.putUChar("cmode", config.cmode);
+  pref.putUChar("caddr", config.caddr);
+  pref.putUChar("paddr", config.paddr);
+  pref.putUChar("saddr", config.saddr);
+  pref.putUChar("eos", config.eos);
+  pref.putUChar("stat", config.stat);
+  pref.putUChar("amode", config.amode);
+  pref.putInt("rtmo", config.rtmo);
+  pref.putChar("eot_ch", config.eot_ch);
+  pref.putUShort("tmbus", config.tmbus);
+  pref.putUChar("eor", config.eor);
+  pref.putUInt("serial", config.serial);
+  pref.putUInt("idn", config.idn);
+  pref.putUInt("isVerb", config.isVerb);
+
+  pref.putBytes("vstr", config.vstr, 48);
+  pref.putBytes("sname", config.sname, 16);
+  pref.end();
+  if (config.isVerb) stream.println(F("Settings saved."));
+#elif defined(E2END)
+  uint8_t *conf = (uint8_t*) &(config);
+  epWriteData(conf, AR_CFG_SIZE);
+  if (config.isVerb) stream.println(F("Settings saved."));
+#else
+  stream.println(F("EEPROM not supported."));
+#endif
+
 }

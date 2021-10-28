@@ -43,6 +43,7 @@ public:
   uint8_t serialIn_h();
   void reset();
   void initConfig();
+  void saveConfig();
 
 public:
   AR488Conf config;

@@ -79,6 +79,7 @@
 #include "gpib.h"
 #include "macros.h"
 
+
 /****** Global variables with volatile values related to controller state *****/
 Controller controller(getSerial());
 GPIB gpib(controller);
@@ -111,24 +112,9 @@ void setup() {
   controller.flushPbuf();
 	initSerial();
 
-// Un-comment for diagnostic purposes
-/*
-  #if defined(__AVR_ATmega32U4__)
-    while(!*arSerial)
-    ;
-//    Serial.print(F("Starting "));
-    for(int i = 0; i < 20; ++i) {  // this gives you 10 seconds to start programming before it crashes
-      Serial.print(".");
-      delay(500);
-    }
-    Serial.println("@>");
-  #endif // __AVR_ATmega32U4__
-*/
-// Un-comment for diagnostic purposes
-
-
   // Initialise
   controller.initConfig();
+
 /*
 #ifdef E2END
   // Read data from non-volatile memory

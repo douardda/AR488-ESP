@@ -740,13 +740,7 @@ void stat_h(char *params, GPIB& gpib) {
 
 /***** Save controller configuration *****/
 void save_h(char *params, GPIB& gpib) {
-#ifdef E2END
-  uint8_t *conf = (uint8_t*) &(gpib.controller.config);
-  epWriteData(conf, AR_CFG_SIZE);
-  if (gpib.controller.config.isVerb) gpib.controller.stream.println(F("Settings saved."));
-#else
-  gpib.controller.stream.println(F("EEPROM not supported."));
-#endif
+  gpib.controller.saveConfig();
 }
 
 
