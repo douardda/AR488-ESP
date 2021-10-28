@@ -142,7 +142,7 @@ void setup() {
 
 #if defined(USE_MACROS) && defined(RUN_STARTUP)
   // Run startup macro
-  execMacro(0, gpib);
+  execMacro(0, controller);
 #endif
 
 #ifdef SAY_HELLO
@@ -163,7 +163,7 @@ void loop() {
 #ifdef USE_MACROS
   // Run user macro if flagged
   if (controller.runMacro > 0) {
-			execMacro(controller.runMacro, gpib);
+			execMacro(controller.runMacro, controller);
     controller.runMacro = 0;
   }
 #endif
@@ -192,15 +192,15 @@ void loop() {
 
   // lnRdy=1: received a command so execute it...
   if (controller.lnRdy == 1) {
-    execCmd(controller.pBuf, controller.pbPtr, gpib);
+    execCmd(controller.pBuf, controller.pbPtr, controller);
   }
 
   // Controller mode:
   if (controller.config.cmode == 2) {
     // lnRdy=2: received data - send it to the instrument...
     if (controller.lnRdy == 2) {
-      gpib.sendToInstrument(controller.pBuf, controller.pbPtr);
-      // Auto-read data from GPIB bus following any command
+      controller.sendToInstrument();
+			// Auto-read data from GPIB bus following any command
       if (controller.config.amode == 1) {
         //        delay(10);
         gpib.gpibReceiveData();
@@ -211,11 +211,12 @@ void loop() {
         gpib.gpibReceiveData();
         gpib.isQuery = false;
       }
+			controller.showPrompt();
     }
 
     // Check status of SRQ and SPOLL if asserted
     if (gpib.isSRQ() && controller.isSrqa) {
-			spoll_h(NULL, gpib);
+			spoll_h(NULL, controller);
       gpib.clearSRQ();
     }
 
@@ -226,12 +227,18 @@ void loop() {
   // Device mode:
   if (controller.config.cmode == 1) {
     if (controller.isTO) {
-      if (controller.lnRdy == 2) gpib.sendToInstrument(controller.pBuf, controller.pbPtr);
+			if (controller.lnRdy == 2) {
+				controller.sendToInstrument();
+				controller.showPrompt();
+			}
     }else if (controller.isRO) {
       gpib.lonMode();
     }else{
 			if (gpib.isATN()) gpib.attnRequired();
-      if (controller.lnRdy == 2) gpib.sendToInstrument(controller.pBuf, controller.pbPtr);
+      if (controller.lnRdy == 2) {
+				controller.sendToInstrument();
+				controller.showPrompt();
+			}
     }
   }
 

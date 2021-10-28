@@ -3,6 +3,9 @@
 
 #include <Arduino.h>
 #include "AR488.h"
+//#include "gpib.h"
+
+class GPIB;
 
 #define PBSIZE 128
 
@@ -44,10 +47,14 @@ public:
   void reset();
   void initConfig();
   void saveConfig();
+  bool verbose() {return config.isVerb;};
+  void sendToInstrument();
+  void setGPIB(GPIB *gpib) {this->gpib = gpib;};
 
 public:
   AR488Conf config;
   Stream &stream;
+  GPIB *gpib = NULL;
 
 /***** PARSE BUFFERS *****/
 /*

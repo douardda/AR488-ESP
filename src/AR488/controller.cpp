@@ -1,5 +1,6 @@
 #include <Arduino.h>
 #include "controller.h"
+#include "gpib.h"
 
 #ifdef ESP32
 #include <Preferences.h>
@@ -78,7 +79,7 @@
 
 
 Controller::Controller(Stream& stream):
-		stream(stream)
+	stream(stream)
 {
 	initConfig();
 }
@@ -105,10 +106,10 @@ uint8_t Controller::parseInput(char c) {
           // Note: for data CR and LF will always be escaped
           if (pbPtr == 0) {
             flushPbuf();
-            //if (AR488.isVerb) showPrompt();
+            //showPrompt();
             return 0;
           } else {
-						//if (AR488.isVerb) stream.println();  // Move to new line
+			//if (AR488.isVerb) stream.println();  // Move to new line
 #ifdef DEBUG1
             dbSerial->print(F("parseInput: Received ")); dbSerial->println(pBuf);
 #endif
@@ -217,13 +218,13 @@ void Controller::flushPbuf() {
   memset(pBuf, '\0', PBSIZE);
   pbPtr = 0;
   lnRdy = 0;
+  dataBufferFull = false;
 }
 
 /***** Show a prompt *****/
 void Controller::showPrompt() {
-  // Print prompt
-  // stream.println();
-  stream.print("> ");
+  if(verbose())
+	stream.print("> ");
 }
 
 
@@ -252,7 +253,7 @@ uint8_t Controller::serialIn_h() {
 #endif
 
   lnRdy = bufferStatus;
-  return bufferStatus;
+  return lnRdy;
 }
 
 
@@ -343,4 +344,13 @@ void Controller::saveConfig()
   stream.println(F("EEPROM not supported."));
 #endif
 
+}
+
+void Controller::sendToInstrument()
+{
+  if (isRO) return;
+  if (pbPtr == 0) return;
+  if (pBuf[pbPtr-1] == '?') gpib->isQuery = true;
+  gpib->gpibSendData(pBuf, pbPtr, dataBufferFull);
+  flushPbuf();
 }

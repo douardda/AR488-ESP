@@ -13,7 +13,7 @@ public:
 
   bool gpibSendCmd(uint8_t cmdByte);
   void gpibSendStatus();
-  void gpibSendData(char *data, uint8_t dsize);
+  void gpibSendData(char *data, uint8_t dsize, bool bufferFull);
   bool gpibReceiveData();
   uint8_t gpibReadByte(uint8_t *db, bool *eoi);
   bool gpibWriteByte(uint8_t db);
@@ -26,7 +26,7 @@ public:
   bool isAtnAsserted();
   void assertIfc();
 
-  void sendToInstrument(char *buffr, uint8_t dsize);
+  //void sendToInstrument(char *buffr, uint8_t dsize);
 
   /*****  GPIB CONTROL ROUTINES *****/
   bool Wait_on_pin_state(uint8_t state, uint8_t pin, int interval);
@@ -50,9 +50,11 @@ public:
   void setATN(bool atn) {ATNasserted = atn;}
   void setSRQ(bool srq) {SRQasserted = srq;}
 
+  bool verbose() {return controller.config.isVerb;}
+
 private:
   Stream &outstream;
-
+  AR488Conf &config;
 
 public:
   Controller &controller;

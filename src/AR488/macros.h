@@ -16,7 +16,7 @@
 #ifdef USE_MACROS
 #include <Arduino.h>
 #include "AR488_Config.h"
-#include "gpib.h"
+#include "controller.h"
 
 /*** DO NOT MODIFY ***/
 /*** vvvvvvvvvvvvv ***/
@@ -53,7 +53,7 @@ const char * const macros[] PROGMEM = {
 /*** ^^^^^^^^^^^^^ ***/
 /*** DO NOT MODIFY ***/
 
-void execMacro(uint8_t idx, GPIB& gpib);
+void execMacro(uint8_t idx, Controller& controller);
 
 #endif
 /***** ^^^^^^^^^^^^^^^^^^^^ *****/

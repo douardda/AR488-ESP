@@ -6,7 +6,7 @@
 #include "commands.h"
 
 
-void execMacro(uint8_t idx, GPIB& gpib) {
+void execMacro(uint8_t idx, Controller& controller) {
   char c;
   const char * macro = (char*)pgm_read_word(macros + idx);
   int ssize = strlen_P(macro);
@@ -18,34 +18,38 @@ void execMacro(uint8_t idx, GPIB& gpib) {
       // Reached last character before NL. Add to buffer before processing
       if (i == ssize-1) {
         // Check buffer and add character
-        if (gpib.controller.pbPtr < (PBSIZE - 2)){
-          gpib.controller.addPbuf(c);
+        if (controller.pbPtr < (PBSIZE - 2)){
+          controller.addPbuf(c);
         }else{
           // Buffer full - clear and exit
-          gpib.controller.flushPbuf();
+          controller.flushPbuf();
+		  controller.showPrompt();
           return;
         }
       }
-      if (gpib.controller.isCmd(gpib.controller.pBuf)){
-		execCmd(gpib.controller.pBuf, strlen(gpib.controller.pBuf), gpib);
+      if (controller.isCmd(controller.pBuf)){
+		execCmd(controller.pBuf, strlen(controller.pBuf), controller);
       }else{
-        gpib.sendToInstrument(gpib.controller.pBuf, strlen(gpib.controller.pBuf));
+        controller.sendToInstrument();
       }
       // Done - clear the buffer
-      gpib.controller.flushPbuf();
+      controller.flushPbuf();
     } else {
       // Check buffer and add character
-      if (gpib.controller.pbPtr < (PBSIZE - 2)) {
-        gpib.controller.addPbuf(c);
+      if (controller.pbPtr < (PBSIZE - 2)) {
+        controller.addPbuf(c);
       } else {
         // Exceeds buffer size - clear buffer and exit
         i = ssize;
+		controller.showPrompt();
         return;
       }
     }
   }
 
   // Clear the buffer ready for serial input
-  gpib.controller.flushPbuf();
+  controller.flushPbuf();
+  controller.showPrompt();
+
 }
 #endif

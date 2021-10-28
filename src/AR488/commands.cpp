@@ -1,8 +1,8 @@
 #include <Arduino.h>
 #include "AR488_Layouts.h"
 #include "commands.h"
-#include "gpib.h"
 #include "controller.h"
+#include "gpib.h"
 #include "macros.h"
 
 
@@ -57,13 +57,13 @@ static cmdRec cmdHidx [] = {
 };
 
 /***** Execute a command *****/
-void execCmd(char *buffr, uint8_t dsize, GPIB &gpib) {
+void execCmd(char *buffr, uint8_t dsize, Controller &controller) {
   char line[PBSIZE];
   // Copy collected chars to line buffer
   memcpy(line, buffr, dsize);
 
   // Flush the parse buffer
-  gpib.controller.flushPbuf();
+  controller.flushPbuf();
 
 #ifdef DEBUG1
   dbSerial->print(F("execCmd: Command received: ")); printHex(line, dsize);
@@ -80,15 +80,15 @@ void execCmd(char *buffr, uint8_t dsize, GPIB &gpib) {
   dbSerial->print(F("execCmd: Sent to the command processor: ")); printHex(line, dsize-2);
 #endif
   // Execute the command
-  getCmd(line, gpib);
+  getCmd(line, controller);
 
   // Show a prompt on completion?
-  if (gpib.controller.config.isVerb) gpib.controller.showPrompt();
+  if (controller.config.isVerb) controller.showPrompt();
 }
 
 
 /***** Extract command and pass to handler *****/
-void getCmd(char *buffr, GPIB& gpib) {
+void getCmd(char *buffr, Controller& controller) {
 
   char *token;  // Pointer to command token
   char *params; // Pointer to parameters (remaining buffer characters)
@@ -126,7 +126,7 @@ void getCmd(char *buffr, GPIB& gpib) {
     dbSerial->print("getCmd: found handler for: "); dbSerial->println(cmdHidx[i].token);
 #endif
     // If command is relevant to mode then execute it
-    if (cmdHidx[i].opmode & gpib.controller.config.cmode) {
+    if (cmdHidx[i].opmode & controller.config.cmode) {
       // If its a command with parameters
       // Copy command parameters to params and call handler with parameters
       params = token + strlen(token) + 1;
@@ -137,19 +137,19 @@ void getCmd(char *buffr, GPIB& gpib) {
         dbSerial->print(F("Calling handler with parameters: ")); dbSerial->println(params);
 #endif
         // Call handler with parameters specified
-        cmdHidx[i].handler(params, gpib);
+        cmdHidx[i].handler(params, controller);
       }else{
         // Call handler without parameters
-		cmdHidx[i].handler(NULL, gpib);
+		cmdHidx[i].handler(NULL, controller);
       }
     }else{
-      errBadCmd(gpib);
-      if (gpib.controller.config.isVerb) gpib.controller.stream.println(F("Command not available in this mode."));
+      errBadCmd(controller);
+      if (controller.config.isVerb) controller.stream.println(F("Command not available in this mode."));
     }
 
   } else {
     // No valid command found
-    errBadCmd(gpib);
+    errBadCmd(controller);
   }
 
 }
@@ -159,7 +159,7 @@ void getCmd(char *buffr, GPIB& gpib) {
 /*************************************/
 
 /***** Show or change device address *****/
-void addr_h(char *params, GPIB& gpib) {
+void addr_h(char *params, Controller& controller) {
   //  char *param, *stat;
   char *param;
   uint16_t val;
@@ -167,194 +167,195 @@ void addr_h(char *params, GPIB& gpib) {
 
     // Primary address
     param = strtok(params, " \t");
-    if (notInRange(param, 1, 30, val, gpib)) return;
-    if (val == gpib.controller.config.caddr) {
-      errBadCmd(gpib);
-      if (gpib.controller.config.isVerb) gpib.controller.stream.println(F("That is my address! Address of a remote device is required."));
+    if (notInRange(param, 1, 30, val, controller)) return;
+    if (val == controller.config.caddr) {
+      errBadCmd(controller);
+      if (controller.config.isVerb) controller.stream.println(F("That is my address! Address of a remote device is required."));
       return;
     }
-    gpib.controller.config.paddr = val;
-    if (gpib.controller.config.isVerb) {
-      gpib.controller.stream.print(F("Set device primary address to: "));
-      gpib.controller.stream.println(val);
+    controller.config.paddr = val;
+    if (controller.config.isVerb) {
+      controller.stream.print(F("Set device primary address to: "));
+      controller.stream.println(val);
     }
 
     // Secondary address
-    gpib.controller.config.saddr = 0;
+    controller.config.saddr = 0;
     val = 0;
     param = strtok(NULL, " \t");
     if (param != NULL) {
-      if (notInRange(param, 96, 126, val, gpib)) return;
-      gpib.controller.config.saddr = val;
-      if (gpib.controller.config.isVerb) {
-        gpib.controller.stream.print("Set device secondary address to: ");
-        gpib.controller.stream.println(val);
+      if (notInRange(param, 96, 126, val, controller)) return;
+      controller.config.saddr = val;
+      if (controller.config.isVerb) {
+        controller.stream.print("Set device secondary address to: ");
+        controller.stream.println(val);
       }
     }
 
   } else {
-    gpib.controller.stream.print(gpib.controller.config.paddr);
-    if (gpib.controller.config.saddr > 0) {
-      gpib.controller.stream.print(F(" "));
-      gpib.controller.stream.print(gpib.controller.config.saddr);
+    controller.stream.print(controller.config.paddr);
+    if (controller.config.saddr > 0) {
+      controller.stream.print(F(" "));
+      controller.stream.print(controller.config.saddr);
     }
-    gpib.controller.stream.println();
+    controller.stream.println();
   }
 }
 
 
 /***** Show or set read timout *****/
-void rtmo_h(char *params, GPIB& gpib) {
+void rtmo_h(char *params, Controller& controller) {
   uint16_t val;
   if (params != NULL) {
-    if (notInRange(params, 1, 32000, val, gpib)) return;
-    gpib.controller.config.rtmo = val;
-    if (gpib.controller.config.isVerb) {
-      gpib.controller.stream.print(F("Set [read_tmo_ms] to: "));
-      gpib.controller.stream.print(val);
-      gpib.controller.stream.println(F(" milliseconds"));
+    if (notInRange(params, 1, 32000, val, controller)) return;
+    controller.config.rtmo = val;
+    if (controller.config.isVerb) {
+      controller.stream.print(F("Set [read_tmo_ms] to: "));
+      controller.stream.print(val);
+      controller.stream.println(F(" milliseconds"));
     }
   } else {
-    gpib.controller.stream.println(gpib.controller.config.rtmo);
+    controller.stream.println(controller.config.rtmo);
   }
 }
 
 
 /***** Show or set end of send character *****/
-void eos_h(char *params, GPIB& gpib) {
+void eos_h(char *params, Controller& controller) {
   uint16_t val;
   if (params != NULL) {
-    if (notInRange(params, 0, 3, val, gpib)) return;
-    gpib.controller.config.eos = (uint8_t)val;
-    if (gpib.controller.config.isVerb) {
-      gpib.controller.stream.print(F("Set EOS to: "));
-      gpib.controller.stream.println(val);
+    if (notInRange(params, 0, 3, val, controller)) return;
+    controller.config.eos = (uint8_t)val;
+    if (controller.config.isVerb) {
+      controller.stream.print(F("Set EOS to: "));
+      controller.stream.println(val);
     };
   } else {
-    gpib.controller.stream.println(gpib.controller.config.eos);
+    controller.stream.println(controller.config.eos);
   }
 }
 
 
 /***** Show or set EOI assertion on/off *****/
-void eoi_h(char *params, GPIB& gpib) {
+void eoi_h(char *params, Controller& controller) {
   uint16_t val;
   if (params != NULL) {
-    if (notInRange(params, 0, 1, val, gpib)) return;
-    gpib.controller.config.eoi = val ? true : false;
-    if (gpib.controller.config.isVerb) {
-      gpib.controller.stream.print(F("Set EOI assertion: "));
-      gpib.controller.stream.println(val ? "ON" : "OFF");
+    if (notInRange(params, 0, 1, val, controller)) return;
+    controller.config.eoi = val ? true : false;
+    if (controller.config.isVerb) {
+      controller.stream.print(F("Set EOI assertion: "));
+      controller.stream.println(val ? "ON" : "OFF");
     };
   } else {
-    gpib.controller.stream.println(gpib.controller.config.eoi);
+    controller.stream.println(controller.config.eoi);
   }
 }
 
 
 /***** Show or set interface to controller/device mode *****/
-void cmode_h(char *params, GPIB& gpib) {
+void cmode_h(char *params, Controller& controller) {
   uint16_t val;
   if (params != NULL) {
-    if (notInRange(params, 0, 1, val, gpib)) return;
+    if (notInRange(params, 0, 1, val, controller)) return;
     switch (val) {
       case 0:
-        gpib.controller.config.cmode = 1;
-        gpib.initDevice();
+        controller.config.cmode = 1;
+        controller.gpib->initDevice();
         break;
       case 1:
-        gpib.controller.config.cmode = 2;
-        gpib.initController();
+        controller.config.cmode = 2;
+        controller.gpib->initController();
         break;
     }
-    if (gpib.controller.config.isVerb) {
-      gpib.controller.stream.print(F("Interface mode set to: "));
-      gpib.controller.stream.println(val ? "CONTROLLER" : "DEVICE");
+    if (controller.config.isVerb) {
+      controller.stream.print(F("Interface mode set to: "));
+      controller.stream.println(val ? "CONTROLLER" : "DEVICE");
     }
   } else {
-    gpib.controller.stream.println(gpib.controller.config.cmode - 1);
+    controller.stream.println(controller.config.cmode - 1);
   }
 }
 
 
 /***** Show or enable/disable sending of end of transmission character *****/
-void eot_en_h(char *params, GPIB& gpib) {
+void eot_en_h(char *params, Controller& controller) {
   uint16_t val;
   if (params != NULL) {
-    if (notInRange(params, 0, 1, val, gpib)) return;
-    gpib.controller.config.eot_en = val ? true : false;
-    if (gpib.controller.config.isVerb) {
-      gpib.controller.stream.print(F("Appending of EOT character: "));
-      gpib.controller.stream.println(val ? "ON" : "OFF");
+    if (notInRange(params, 0, 1, val, controller)) return;
+    controller.config.eot_en = val ? true : false;
+    if (controller.config.isVerb) {
+      controller.stream.print(F("Appending of EOT character: "));
+      controller.stream.println(val ? "ON" : "OFF");
     }
   } else {
-    gpib.controller.stream.println(gpib.controller.config.eot_en);
+    controller.stream.println(controller.config.eot_en);
   }
 }
 
 
 /***** Show or set end of transmission character *****/
-void eot_char_h(char *params, GPIB& gpib) {
+void eot_char_h(char *params, Controller& controller) {
   uint16_t val;
   if (params != NULL) {
-    if (notInRange(params, 0, 255, val, gpib)) return;
-    gpib.controller.config.eot_ch = (uint8_t)val;
-    if (gpib.controller.config.isVerb) {
-      gpib.controller.stream.print(F("EOT set to ASCII character: "));
-      gpib.controller.stream.println(val);
+    if (notInRange(params, 0, 255, val, controller)) return;
+    controller.config.eot_ch = (uint8_t)val;
+    if (controller.config.isVerb) {
+      controller.stream.print(F("EOT set to ASCII character: "));
+      controller.stream.println(val);
     };
   } else {
-    gpib.controller.stream.println(gpib.controller.config.eot_ch, DEC);
+    controller.stream.println(controller.config.eot_ch, DEC);
   }
 }
 
 
 /***** Show or enable/disable auto mode *****/
-void amode_h(char *params, GPIB& gpib) {
+void amode_h(char *params, Controller& controller) {
   uint16_t val;
   if (params != NULL) {
-    if (notInRange(params, 0, 3, val, gpib)) return;
-    if (val > 0 && gpib.controller.config.isVerb) {
-      gpib.controller.stream.println(F("WARNING: automode ON can cause some devices to generate"));
-      gpib.controller.stream.println(F("         'addressed to talk but nothing to say' errors"));
+    if (notInRange(params, 0, 3, val, controller)) return;
+    if (val > 0 && controller.config.isVerb) {
+      controller.stream.println(F("WARNING: automode ON can cause some devices to generate"));
+      controller.stream.println(F("         'addressed to talk but nothing to say' errors"));
     }
-    gpib.controller.config.amode = (uint8_t)val;
-    if (gpib.controller.config.amode < 3) gpib.controller.aRead = false;
-    if (gpib.controller.config.isVerb) {
-      gpib.controller.stream.print(F("Auto mode: "));
-      gpib.controller.stream.println(gpib.controller.config.amode);
+    controller.config.amode = (uint8_t)val;
+    if (controller.config.amode < 3) controller.aRead = false;
+    if (controller.config.isVerb) {
+      controller.stream.print(F("Auto mode: "));
+      controller.stream.println(controller.config.amode);
     }
   } else {
-    gpib.controller.stream.println(gpib.controller.config.amode);
+    controller.stream.println(controller.config.amode);
   }
 }
 
 
 /***** Display the controller version string *****/
-void ver_h(char *params, GPIB& gpib) {
+void ver_h(char *params, Controller& controller) {
   // If "real" requested
   if (params != NULL && strncmp(params, "real", 3) == 0) {
-    gpib.controller.stream.println(F(FWVER));
+    controller.stream.println(F(FWVER));
     // Otherwise depends on whether we have a custom string set
   } else {
-    if (strlen(gpib.controller.config.vstr) > 0) {
-      gpib.controller.stream.println(gpib.controller.config.vstr);
+    if (strlen(controller.config.vstr) > 0) {
+      controller.stream.println(controller.config.vstr);
     } else {
-      gpib.controller.stream.println(F(FWVER));
+      controller.stream.println(F(FWVER));
     }
   }
 }
 
 
 /***** Address device to talk and read the sent data *****/
-void read_h(char *params, GPIB& gpib) {
+void read_h(char *params, Controller& controller) {
+  GPIB &gpib = *controller.gpib;
   // Clear read flags
   gpib.rEoi = false;
   gpib.rEbt = false;
   // Read any parameters
   if (params != NULL) {
     if (strlen(params) > 3) {
-      if (gpib.controller.config.isVerb) gpib.controller.stream.println(F("Invalid termination character - ignored!"));
+      if (controller.config.isVerb) controller.stream.println(F("Invalid termination character - ignored!"));
     } else if (strncmp(params, "eoi", 3) == 0) { // Read with eoi detection
       gpib.rEoi = true;
     } else { // Assume ASCII character given and convert to an 8 bit byte
@@ -362,9 +363,9 @@ void read_h(char *params, GPIB& gpib) {
       gpib.eByte = atoi(params);
     }
   }
-  if (gpib.controller.config.amode == 3) {
+  if (controller.config.amode == 3) {
     // In auto continuous mode we set this flag to indicate we are ready for continuous read
-    gpib.controller.aRead = true;
+    controller.aRead = true;
   } else {
     // If auto mode is disabled we do a single read
     gpib.gpibReceiveData();
@@ -373,17 +374,18 @@ void read_h(char *params, GPIB& gpib) {
 
 
 /***** Send device clear (usually resets the device to power on state) *****/
-void clr_h(char *params, GPIB& gpib) {
-  if (gpib.addrDev(gpib.controller.config.paddr, 0)) {
-    if (gpib.controller.config.isVerb) gpib.controller.stream.println(F("Failed to address device"));
+void clr_h(char *params, Controller& controller) {
+  GPIB &gpib = *controller.gpib;
+  if (gpib.addrDev(controller.config.paddr, 0)) {
+    if (controller.config.isVerb) controller.stream.println(F("Failed to address device"));
     return;
   }
   if (gpib.gpibSendCmd(GC_SDC))  {
-    if (gpib.controller.config.isVerb) gpib.controller.stream.println(F("Failed to send SDC"));
+    if (controller.config.isVerb) controller.stream.println(F("Failed to send SDC"));
     return;
   }
   if (gpib.uaddrDev()) {
-    if (gpib.controller.config.isVerb) gpib.controller.stream.println(F("Failed to untalk GPIB bus"));
+    if (controller.config.isVerb) controller.stream.println(F("Failed to untalk GPIB bus"));
     return;
   }
   // Set GPIB controls back to idle state
@@ -392,30 +394,31 @@ void clr_h(char *params, GPIB& gpib) {
 
 
 /***** Send local lockout command *****/
-void llo_h(char *params, GPIB& gpib) {
+void llo_h(char *params, Controller& controller) {
+  GPIB &gpib = *controller.gpib;
   // NOTE: REN *MUST* be asserted (LOW)
   if (digitalRead(REN)==LOW) {
     // For 'all' send LLO to the bus without addressing any device - devices will show REM
     if (params != NULL) {
       if (0 == strncmp(params, "all", 3)) {
         if (gpib.gpibSendCmd(GC_LLO)) {
-          if (gpib.controller.config.isVerb) gpib.controller.stream.println(F("Failed to send universal LLO."));
+          if (controller.config.isVerb) controller.stream.println(F("Failed to send universal LLO."));
         }
       }
     } else {
       // Address current device
-      if (gpib.addrDev(gpib.controller.config.paddr, 0)) {
-        if (gpib.controller.config.isVerb) gpib.controller.stream.println(F("Failed to address the device."));
+      if (gpib.addrDev(controller.config.paddr, 0)) {
+        if (controller.config.isVerb) controller.stream.println(F("Failed to address the device."));
         return;
       }
       // Send LLO to currently addressed device
       if (gpib.gpibSendCmd(GC_LLO)) {
-        if (gpib.controller.config.isVerb) gpib.controller.stream.println(F("Failed to send LLO to device"));
+        if (controller.config.isVerb) controller.stream.println(F("Failed to send LLO to device"));
         return;
       }
       // Unlisten bus
       if (gpib.uaddrDev()) {
-        if (gpib.controller.config.isVerb) gpib.controller.stream.println(F("Failed to unlisten the GPIB bus"));
+        if (controller.config.isVerb) controller.stream.println(F("Failed to unlisten the GPIB bus"));
         return;
       }
     }
@@ -426,7 +429,8 @@ void llo_h(char *params, GPIB& gpib) {
 
 
 /***** Send Go To Local (GTL) command *****/
-void loc_h(char *params, GPIB& gpib) {
+void loc_h(char *params, Controller& controller) {
+  GPIB &gpib = *controller.gpib;
   // REN *MUST* be asserted (LOW)
   if (digitalRead(REN)==LOW) {
     if (params != NULL) {
@@ -442,18 +446,18 @@ void loc_h(char *params, GPIB& gpib) {
       }
     } else {
       // Address device to listen
-      if (gpib.addrDev(gpib.controller.config.paddr, 0)) {
-        if (gpib.controller.config.isVerb) gpib.controller.stream.println(F("Failed to address device."));
+      if (gpib.addrDev(controller.config.paddr, 0)) {
+        if (controller.config.isVerb) controller.stream.println(F("Failed to address device."));
         return;
       }
       // Send GTL
       if (gpib.gpibSendCmd(GC_GTL)) {
-        if (gpib.controller.config.isVerb) gpib.controller.stream.println(F("Failed sending LOC."));
+        if (controller.config.isVerb) controller.stream.println(F("Failed sending LOC."));
         return;
       }
       // Unlisten bus
       if (gpib.uaddrDev()) {
-        if (gpib.controller.config.isVerb) gpib.controller.stream.println(F("Failed to unlisten GPIB bus."));
+        if (controller.config.isVerb) controller.stream.println(F("Failed to unlisten GPIB bus."));
         return;
       }
       // Set GPIB controls back to idle state
@@ -468,17 +472,18 @@ void loc_h(char *params, GPIB& gpib) {
  * the bus and causes all interfaces to return to their idle
  * state
  */
-void ifc_h(char *params, GPIB& gpib) {
-  gpib.assertIfc();
+void ifc_h(char *params, Controller& controller) {
+  controller.gpib->assertIfc();
 }
 
 
 /***** Send a trigger command *****/
-void trg_h(char *params, GPIB& gpib) {
+void trg_h(char *params, Controller& controller) {
   char *param;
   uint8_t addrs[15];
   uint16_t val = 0;
   uint8_t cnt = 0;
+  GPIB &gpib = *controller.gpib;
 
   // Initialise address array
   for (int i = 0; i < 15; i++) {
@@ -488,7 +493,7 @@ void trg_h(char *params, GPIB& gpib) {
   // Read parameters
   if (params == NULL) {
     // No parameters - trigger addressed device only
-    addrs[0] = gpib.controller.config.paddr;
+    addrs[0] = controller.config.paddr;
     cnt++;
   } else {
     // Read address parameters into array
@@ -498,7 +503,7 @@ void trg_h(char *params, GPIB& gpib) {
       } else {
         param = strtok(NULL, " \t");
       }
-      if (notInRange(param, 1, 30, val, gpib)) return;
+      if (notInRange(param, 1, 30, val, controller)) return;
       addrs[cnt] = (uint8_t)val;
       cnt++;
     }
@@ -509,17 +514,17 @@ void trg_h(char *params, GPIB& gpib) {
     for (int i = 0; i < cnt; i++) {
       // Address the device
       if (gpib.addrDev(addrs[i], 0)) {
-        if (gpib.controller.config.isVerb) gpib.controller.stream.println(F("Failed to address device"));
+        if (controller.config.isVerb) controller.stream.println(F("Failed to address device"));
         return;
       }
       // Send GTL
       if (gpib.gpibSendCmd(GC_GET))  {
-        if (gpib.controller.config.isVerb) gpib.controller.stream.println(F("Failed to trigger device"));
+        if (controller.config.isVerb) controller.stream.println(F("Failed to trigger device"));
         return;
       }
       // Unaddress device
       if (gpib.uaddrDev()) {
-        if (gpib.controller.config.isVerb) gpib.controller.stream.println(F("Failed to unlisten GPIB bus"));
+        if (controller.config.isVerb) controller.stream.println(F("Failed to unlisten GPIB bus"));
         return;
       }
     }
@@ -527,7 +532,7 @@ void trg_h(char *params, GPIB& gpib) {
     // Set GPIB controls back to idle state
     gpib.setGpibControls(CIDS);
 
-    if (gpib.controller.config.isVerb) gpib.controller.stream.println(F("Group trigger completed."));
+    if (controller.config.isVerb) controller.stream.println(F("Group trigger completed."));
   }
 }
 
@@ -540,13 +545,13 @@ void trg_h(char *params, GPIB& gpib) {
  * and will not reset a crashed MCU, but it will re-start
  * the interface program and re-initialise all parameters.
  */
-void rst_h(char *params, GPIB& gpib) {
-  gpib.controller.reset();
+void rst_h(char *params, Controller& controller) {
+  controller.reset();
 }
 
 
 /***** Serial Poll Handler *****/
-void spoll_h(char *params, GPIB& gpib) {
+void spoll_h(char *params, Controller& controller) {
   char *param;
   uint8_t addrs[15];
   uint8_t sb = 0;
@@ -556,6 +561,7 @@ void spoll_h(char *params, GPIB& gpib) {
   uint16_t val = 0;
   bool all = false;
   bool eoiDetected = false;
+  GPIB &gpib = *controller.gpib;
 
   // Initialise address array
   for (int i = 0; i < 15; i++) {
@@ -565,7 +571,7 @@ void spoll_h(char *params, GPIB& gpib) {
   // Read parameters
   if (params == NULL) {
     // No parameters - trigger addressed device only
-    addrs[0] = gpib.controller.config.paddr;
+    addrs[0] = controller.config.paddr;
     j = 1;
   } else {
     // Read address parameters into array
@@ -579,16 +585,16 @@ void spoll_h(char *params, GPIB& gpib) {
       if (strncmp(param, "all", 3) == 0) {
         all = true;
         j = 30;
-        if (gpib.controller.config.isVerb) gpib.controller.stream.println(F("Serial poll of all devices requested..."));
+        if (controller.config.isVerb) controller.stream.println(F("Serial poll of all devices requested..."));
         break;
         // Read all address parameters
       } else if (strlen(params) < 3) { // No more than 2 characters
-        if (notInRange(param, 1, 30, val, gpib)) return;
+        if (notInRange(param, 1, 30, val, controller)) return;
         addrs[j] = (uint8_t)val;
         j++;
       } else {
-        errBadCmd(gpib);
-        if (gpib.controller.config.isVerb) gpib.controller.stream.println(F("Invalid parameter"));
+        errBadCmd(controller);
+        if (controller.config.isVerb) controller.stream.println(F("Invalid parameter"));
         return;
       }
     }
@@ -603,7 +609,7 @@ void spoll_h(char *params, GPIB& gpib) {
   }
 
   // Controller addresses itself as listner
-  if ( gpib.gpibSendCmd(GC_LAD + gpib.controller.config.caddr) )  {
+  if ( gpib.gpibSendCmd(GC_LAD + controller.config.caddr) )  {
 #ifdef DEBUG4
     dbSerial->println(F("spoll_h: failed to send LAD"));
 #endif
@@ -629,7 +635,7 @@ void spoll_h(char *params, GPIB& gpib) {
     }
 
     // Don't need to poll own address
-    if (val != gpib.controller.config.caddr) {
+    if (val != controller.config.caddr) {
 
       // Address a device to talk
       if ( gpib.gpibSendCmd(GC_TAD + val) )  {
@@ -652,26 +658,26 @@ void spoll_h(char *params, GPIB& gpib) {
           // If all, return specially formatted response: SRQ:addr,status
           // but only when RQS bit set
           if (sb & 0x40) {
-            gpib.controller.stream.print(F("SRQ:")); gpib.controller.stream.print(i); gpib.controller.stream.print(F(",")); gpib.controller.stream.println(sb, DEC);
+            controller.stream.print(F("SRQ:")); controller.stream.print(i); controller.stream.print(F(",")); controller.stream.println(sb, DEC);
             i = j;
           }
         } else {
           // Return decimal number representing status byte
-          gpib.controller.stream.println(sb, DEC);
-          if (gpib.controller.config.isVerb) {
-            gpib.controller.stream.print(F("Received status byte ["));
-            gpib.controller.stream.print(sb);
-            gpib.controller.stream.print(F("] from device at address: "));
-            gpib.controller.stream.println(val);
+          controller.stream.println(sb, DEC);
+          if (controller.config.isVerb) {
+            controller.stream.print(F("Received status byte ["));
+            controller.stream.print(sb);
+            controller.stream.print(F("] from device at address: "));
+            controller.stream.println(val);
           }
           i = j;
         }
       } else {
-        if (gpib.controller.config.isVerb) gpib.controller.stream.println(F("Failed to retrieve status byte"));
+        if (controller.config.isVerb) controller.stream.println(F("Failed to retrieve status byte"));
       }
     }
   }
-  if (all) gpib.controller.stream.println();
+  if (all) controller.stream.println();
 
   // Send Serial Poll Disable [SPD] to all devices
   if ( gpib.gpibSendCmd(GC_SPD) )  {
@@ -704,59 +710,59 @@ void spoll_h(char *params, GPIB& gpib) {
   // still asserted, then another device may be requesting service so another
   // serial poll will be called from the main loop
   gpib.setSRQ(digitalRead(SRQ) == LOW);
-  if (gpib.controller.config.isVerb) gpib.controller.stream.println(F("Serial poll completed."));
+  if (controller.config.isVerb) controller.stream.println(F("Serial poll completed."));
 
 }
 
 
 /***** Return status of SRQ line *****/
-void srq_h(char *params, GPIB& gpib) {
+void srq_h(char *params, Controller& controller) {
   //NOTE: LOW=asserted, HIGH=unasserted
-  gpib.controller.stream.println(!digitalRead(SRQ));
+  controller.stream.println(!digitalRead(SRQ));
 }
 
 
 /***** Set the status byte (device mode) *****/
-void stat_h(char *params, GPIB& gpib) {
+void stat_h(char *params, Controller& controller) {
   uint16_t val = 0;
   // A parameter given?
   if (params != NULL) {
     // Byte value given?
-    if (notInRange(params, 0, 255, val, gpib)) return;
-    gpib.controller.config.stat = (uint8_t)val;
+    if (notInRange(params, 0, 255, val, controller)) return;
+    controller.config.stat = (uint8_t)val;
     if (val & 0x40) {
       setSrqSig();
-      if (gpib.controller.config.isVerb) gpib.controller.stream.println(F("SRQ asserted."));
+      if (controller.config.isVerb) controller.stream.println(F("SRQ asserted."));
     } else {
       clrSrqSig();
-      if (gpib.controller.config.isVerb) gpib.controller.stream.println(F("SRQ un-asserted."));
+      if (controller.config.isVerb) controller.stream.println(F("SRQ un-asserted."));
     }
   } else {
     // Return the currently set status byte
-    gpib.controller.stream.println(gpib.controller.config.stat);
+    controller.stream.println(controller.config.stat);
   }
 }
 
 
 /***** Save controller configuration *****/
-void save_h(char *params, GPIB& gpib) {
-  gpib.controller.saveConfig();
+void save_h(char *params, Controller& controller) {
+  controller.saveConfig();
 }
 
 
 /***** Show state or enable/disable listen only mode *****/
-void lon_h(char *params, GPIB& gpib) {
+void lon_h(char *params, Controller& controller) {
   uint16_t val;
   if (params != NULL) {
-    if (notInRange(params, 0, 1, val, gpib)) return;
-    gpib.controller.isRO = val ? true : false;
-    if (gpib.controller.isTO) gpib.controller.isTO = false; // Talk-only mode must be disabled!
-    if (gpib.controller.config.isVerb) {
-      gpib.controller.stream.print(F("LON: "));
-      gpib.controller.stream.println(val ? "ON" : "OFF") ;
+    if (notInRange(params, 0, 1, val, controller)) return;
+    controller.isRO = val ? true : false;
+    if (controller.isTO) controller.isTO = false; // Talk-only mode must be disabled!
+    if (controller.config.isVerb) {
+      controller.stream.print(F("LON: "));
+      controller.stream.println(val ? "ON" : "OFF") ;
     }
   } else {
-    gpib.controller.stream.println(gpib.controller.isRO);
+    controller.stream.println(controller.isRO);
   }
 }
 
@@ -787,8 +793,8 @@ void clrSrqSig() {
  * Polls all devices, not just the currently addressed instrument
  * This is an alias wrapper for ++spoll all
  */
-void aspoll_h(char *params, GPIB& gpib) {
-  spoll_h((char*)"all", gpib);
+void aspoll_h(char *params, Controller& controller) {
+  spoll_h((char*)"all", controller);
 }
 
 
@@ -796,9 +802,10 @@ void aspoll_h(char *params, GPIB& gpib) {
 /*
  * The universal Device Clear (DCL) is unaddressed and affects all devices on the Gpib bus.
  */
-void dcl_h(char *params, GPIB& gpib) {
+void dcl_h(char *params, Controller& controller) {
+  GPIB &gpib = *controller.gpib;
   if ( gpib.gpibSendCmd(GC_DCL) )  {
-    if (gpib.controller.config.isVerb) gpib.controller.stream.println(F("Sending DCL failed"));
+    if (controller.config.isVerb) controller.stream.println(F("Sending DCL failed"));
     return;
   }
   // Set GPIB controls back to idle state
@@ -807,24 +814,24 @@ void dcl_h(char *params, GPIB& gpib) {
 
 
 /***** Re-load default configuration *****/
-void default_h(char *params, GPIB& gpib) {
-  gpib.controller.initConfig();
+void default_h(char *params, Controller& controller) {
+  controller.initConfig();
 }
 
 
 /***** Show or set end of receive character(s) *****/
-void eor_h(char *params, GPIB& gpib) {
+void eor_h(char *params, Controller& controller) {
   uint16_t val;
   if (params != NULL) {
-    if (notInRange(params, 0, 15, val, gpib)) return;
-    gpib.controller.config.eor = (uint8_t)val;
-    if (gpib.controller.config.isVerb) {
-      gpib.controller.stream.print(F("Set EOR to: "));
-      gpib.controller.stream.println(val);
+    if (notInRange(params, 0, 15, val, controller)) return;
+    controller.config.eor = (uint8_t)val;
+    if (controller.config.isVerb) {
+      controller.stream.print(F("Set EOR to: "));
+      controller.stream.println(val);
     };
   } else {
-    if (gpib.controller.config.eor>7) gpib.controller.config.eor = 0;  // Needed to reset FF read from EEPROM after FW upgrade
-    gpib.controller.stream.println(gpib.controller.config.eor);
+    if (controller.config.eor>7) controller.config.eor = 0;  // Needed to reset FF read from EEPROM after FW upgrade
+    controller.stream.println(controller.config.eor);
   }
 }
 
@@ -833,8 +840,9 @@ void eor_h(char *params, GPIB& gpib) {
 /*
  * Device must be set to respond on DIO line 1 - 8
  */
-void ppoll_h(char *params, GPIB& gpib) {
+void ppoll_h(char *params, Controller& controller) {
   uint8_t sb = 0;
+  GPIB &gpib = *controller.gpib;
 
   // Poll devices
   // Start in controller idle state
@@ -850,39 +858,39 @@ void ppoll_h(char *params, GPIB& gpib) {
   gpib.setGpibControls(CIDS);
 
   // Output the response byte
-  gpib.controller.stream.println(sb, DEC);
+  controller.stream.println(sb, DEC);
 
-  if (gpib.controller.config.isVerb) gpib.controller.stream.println(F("Parallel poll completed."));
+  if (controller.config.isVerb) controller.stream.println(F("Parallel poll completed."));
 }
 
 
 /***** Assert or de-assert REN 0=de-assert; 1=assert *****/
-void ren_h(char *params, GPIB& gpib) {
+void ren_h(char *params, Controller& controller) {
 #if defined (SN7516X) && not defined (SN7516X_DC)
   params = params;
-  gpib.controller.stream.println(F("Unavailable")) ;
+  controller.stream.println(F("Unavailable")) ;
 #else
   // char *stat;
   uint16_t val;
   if (params != NULL) {
-    if (notInRange(params, 0, 1, val, gpib)) return;
+    if (notInRange(params, 0, 1, val, controller)) return;
     digitalWrite(REN, (val ? LOW : HIGH));
-    if (gpib.controller.config.isVerb) {
-      gpib.controller.stream.print(F("REN: "));
-      gpib.controller.stream.println(val ? "REN asserted" : "REN un-asserted") ;
+    if (controller.config.isVerb) {
+      controller.stream.print(F("REN: "));
+      controller.stream.println(val ? "REN asserted" : "REN un-asserted") ;
     };
   } else {
-    gpib.controller.stream.println(digitalRead(REN) ? 0 : 1);
+    controller.stream.println(digitalRead(REN) ? 0 : 1);
   }
 #endif
 }
 
 
 /***** Enable verbose mode 0=OFF; 1=ON *****/
-void verb_h(char *params, GPIB& gpib) {
-  gpib.controller.config.isVerb = !gpib.controller.config.isVerb;
-  gpib.controller.stream.print("Verbose: ");
-  gpib.controller.stream.println(gpib.controller.config.isVerb ? "ON" : "OFF");
+void verb_h(char *params, Controller& controller) {
+  controller.config.isVerb = !controller.config.isVerb;
+  controller.stream.print("Verbose: ");
+  controller.stream.println(controller.config.isVerb ? "ON" : "OFF");
 }
 
 
@@ -890,7 +898,7 @@ void verb_h(char *params, GPIB& gpib) {
 /* Replace the standard AR488 version string with something else
  *  NOTE: some instrument software requires a sepcific version string to ID the interface
  */
-void setvstr_h(char *params, GPIB& gpib) {
+void setvstr_h(char *params, Controller& controller) {
   uint8_t plen;
   char idparams[64];
   plen = strlen(params);
@@ -899,25 +907,25 @@ void setvstr_h(char *params, GPIB& gpib) {
   strncat(idparams, params, plen);
 
 /*
-gpib.controller.stream.print(F("Plen: "));
-gpib.controller.stream.println(plen);
-gpib.controller.stream.print(F("Params: "));
-gpib.controller.stream.println(params);
-gpib.controller.stream.print(F("IdParams: "));
-gpib.controller.stream.println(idparams);
+controller.stream.print(F("Plen: "));
+controller.stream.println(plen);
+controller.stream.print(F("Params: "));
+controller.stream.println(params);
+controller.stream.print(F("IdParams: "));
+controller.stream.println(idparams);
 */
 
-  id_h(idparams, gpib);
+  id_h(idparams, controller);
 
 /*
   if (params != NULL) {
     len = strlen(params);
     if (len>47) len=47; // Ignore anything over 47 characters
-    memset(gpib.controller.config.vstr, '\0', 48);
-    strncpy(gpib.controller.config.vstr, params, len);
-    if (gpib.controller.config.isVerb) {
-      gpib.controller.stream.print(F("Changed version string to: "));
-      gpib.controller.stream.println(params);
+    memset(controller.config.vstr, '\0', 48);
+    strncpy(controller.config.vstr, params, len);
+    if (controller.config.isVerb) {
+      controller.stream.print(F("Changed version string to: "));
+      controller.stream.println(params);
     };
   }
 */
@@ -925,18 +933,18 @@ gpib.controller.stream.println(idparams);
 
 
 /***** Talk only mode *****/
-void ton_h(char *params, GPIB& gpib) {
+void ton_h(char *params, Controller& controller) {
   uint16_t val;
   if (params != NULL) {
-    if (notInRange(params, 0, 1, val, gpib)) return;
-    gpib.controller.isTO = val ? true : false;
-    if (gpib.controller.isTO) gpib.controller.isRO = false; // Read-only mode must be disabled in TO mode!
-    if (gpib.controller.config.isVerb) {
-      gpib.controller.stream.print(F("TON: "));
-      gpib.controller.stream.println(val ? "ON" : "OFF") ;
+    if (notInRange(params, 0, 1, val, controller)) return;
+    controller.isTO = val ? true : false;
+    if (controller.isTO) controller.isRO = false; // Read-only mode must be disabled in TO mode!
+    if (controller.config.isVerb) {
+      controller.stream.print(F("TON: "));
+      controller.stream.println(val ? "ON" : "OFF") ;
     }
   } else {
-    gpib.controller.stream.println(gpib.controller.isTO);
+    controller.stream.println(controller.isTO);
   }
 }
 
@@ -950,42 +958,43 @@ void ton_h(char *params, GPIB& gpib) {
  * an ++spoll command needs to be given manually to return
  * the status byte.
  */
-void srqa_h(char *params, GPIB& gpib) {
+void srqa_h(char *params, Controller& controller) {
   uint16_t val;
   if (params != NULL) {
-    if (notInRange(params, 0, 1, val, gpib)) return;
+    if (notInRange(params, 0, 1, val, controller)) return;
     switch (val) {
       case 0:
-        gpib.controller.isSrqa = false;
+        controller.isSrqa = false;
         break;
       case 1:
-        gpib.controller.isSrqa = true;
+        controller.isSrqa = true;
         break;
     }
-    if (gpib.controller.config.isVerb) gpib.controller.stream.println(gpib.controller.isSrqa ? "SRQ auto ON" : "SRQ auto OFF") ;
+    if (controller.config.isVerb) controller.stream.println(controller.isSrqa ? "SRQ auto ON" : "SRQ auto OFF") ;
   } else {
-    gpib.controller.stream.println(gpib.controller.isSrqa);
+    controller.stream.println(controller.isSrqa);
   }
 }
 
 
 /***** Repeat a given command and return result *****/
-void repeat_h(char *params, GPIB& gpib) {
+void repeat_h(char *params, Controller& controller) {
 
   uint16_t count;
   uint16_t tmdly;
   char *param;
+  GPIB &gpib = *controller.gpib;
 
   if (params != NULL) {
     // Count (number of repetitions)
     param = strtok(params, " \t");
     if (strlen(param) > 0) {
-      if (notInRange(param, 2, 255, count, gpib)) return;
+      if (notInRange(param, 2, 255, count, controller)) return;
     }
     // Time delay (milliseconds)
     param = strtok(NULL, " \t");
     if (strlen(param) > 0) {
-      if (notInRange(param, 0, 30000, tmdly, gpib)) return;
+      if (notInRange(param, 0, 30000, tmdly, controller)) return;
     }
 
     // Pointer to remainder of parameters string
@@ -993,47 +1002,47 @@ void repeat_h(char *params, GPIB& gpib) {
     if (strlen(param) > 0) {
       for (uint16_t i = 0; i < count; i++) {
         // Send string to instrument
-        gpib.gpibSendData(param, strlen(param));
+		gpib.gpibSendData(param, strlen(param), false);
         delay(tmdly);
         gpib.gpibReceiveData();
       }
     } else {
-      errBadCmd(gpib);
-      if (gpib.controller.config.isVerb) gpib.controller.stream.println(F("Missing parameter"));
+      errBadCmd(controller);
+      if (controller.config.isVerb) controller.stream.println(F("Missing parameter"));
       return;
     }
   } else {
-    errBadCmd(gpib);
-    if (gpib.controller.config.isVerb) gpib.controller.stream.println(F("Missing parameters"));
+    errBadCmd(controller);
+    if (controller.config.isVerb) controller.stream.println(F("Missing parameters"));
   }
 
 }
 
 
 /***** Run a macro *****/
-void macro_h(char *params, GPIB& gpib) {
+void macro_h(char *params, Controller& controller) {
 #ifdef USE_MACROS
   uint16_t val;
   const char * macro;
 
   if (params != NULL) {
-    if (notInRange(params, 0, 9, val, gpib)) return;
+    if (notInRange(params, 0, 9, val, controller)) return;
     //    execMacro((uint8_t)val);
-    gpib.controller.runMacro = (uint8_t)val;
+    controller.runMacro = (uint8_t)val;
   } else {
     for (int i = 0; i < 10; i++) {
 	  macro = (char*)pgm_read_word(macros + i);
-      //      gpib.controller.stream.print(i);gpib.controller.stream.print(F(": "));
+      //      controller.stream.print(i);controller.stream.print(F(": "));
       if (strlen_P(macro) > 0) {
-        gpib.controller.stream.print(i);
-        gpib.controller.stream.print(" ");
+        controller.stream.print(i);
+        controller.stream.print(" ");
       }
     }
-    gpib.controller.stream.println();
+    controller.stream.println();
   }
 #else
   memset(params, '\0', 5);
-  gpib.controller.stream.println(F("Disabled"));
+  controller.stream.println(F("Disabled"));
 #endif
 }
 
@@ -1045,10 +1054,11 @@ void macro_h(char *params, GPIB& gpib) {
  * byte: byte to write on the bus
  * Note: values to switch individual bits = 1,2,4,8,10,20,40,80
  */
-void xdiag_h(char *params, GPIB& gpib){
+void xdiag_h(char *params, Controller& controller){
   char *param;
   uint8_t mode = 0;
   uint8_t val = 0;
+  GPIB &gpib = *controller.gpib;
 
   // Get first parameter (mode = 0 or 1)
   param = strtok(params, " \t");
@@ -1056,7 +1066,7 @@ void xdiag_h(char *params, GPIB& gpib){
     if (strlen(param)<4){
       mode = atoi(param);
       if (mode>2) {
-        gpib.controller.stream.println(F("Invalid: 0=data bus; 1=control bus"));
+        controller.stream.println(F("Invalid: 0=data bus; 1=control bus"));
         return;
       }
     }
@@ -1074,7 +1084,7 @@ void xdiag_h(char *params, GPIB& gpib){
       setGpibState(~val, 0xFF, 0);  // Set state (low=asserted so must be inverse of value)
       // Reset after 10 seconds
       delay(10000);
-      if (gpib.controller.config.cmode==2) {
+      if (controller.config.cmode==2) {
         gpib.setGpibControls(CINI);
       }else{
         gpib.setGpibControls(DINI);
@@ -1093,17 +1103,17 @@ void xdiag_h(char *params, GPIB& gpib){
 
 /****** Timing parameters ******/
 
-void tmbus_h(char *params, GPIB& gpib) {
+void tmbus_h(char *params, Controller& controller) {
   uint16_t val;
   if (params != NULL) {
-    if (notInRange(params, 0, 30000, val, gpib)) return;
-    gpib.controller.config.tmbus = val;
-    if (gpib.controller.config.isVerb) {
-      gpib.controller.stream.print(F("TmBus set to: "));
-      gpib.controller.stream.println(val);
+    if (notInRange(params, 0, 30000, val, controller)) return;
+    controller.config.tmbus = val;
+    if (controller.config.isVerb) {
+      controller.stream.print(F("TmBus set to: "));
+      controller.stream.println(val);
     };
   } else {
-    gpib.controller.stream.println(gpib.controller.config.tmbus, DEC);
+    controller.stream.println(controller.config.tmbus, DEC);
   }
 }
 
@@ -1115,15 +1125,15 @@ void tmbus_h(char *params, GPIB& gpib) {
  * ++id name   - short name of device (e.g. HP3478A) up to 15 characters
  * ++id serial - serial number up to 9 digits long
  */
-void id_h(char *params, GPIB& gpib) {
+void id_h(char *params, Controller& controller) {
   uint8_t dlen = 0;
   char * keyword; // Pointer to keyword following ++id
   char * datastr; // Pointer to supplied data (remaining characters in buffer)
   char serialStr[10];
 
 #ifdef DEBUG10
-  gpib.controller.stream.print(F("Params: "));
-  gpib.controller.stream.println(params);
+  controller.stream.print(F("Params: "));
+  controller.stream.println(params);
 #endif
 
   if (params != NULL) {
@@ -1133,80 +1143,80 @@ void id_h(char *params, GPIB& gpib) {
     if (dlen) {
       if (strncmp(keyword, "verstr", 6)==0) {
 #ifdef DEBUG10
-        gpib.controller.stream.print(F("Keyword: "));
-        gpib.controller.stream.println(keyword);
-        gpib.controller.stream.print(F("DataStr: "));
-        gpib.controller.stream.println(datastr);
+        controller.stream.print(F("Keyword: "));
+        controller.stream.println(keyword);
+        controller.stream.print(F("DataStr: "));
+        controller.stream.println(datastr);
 #endif
         if (dlen>0 && dlen<48) {
 #ifdef DEBUG10
-        gpib.controller.stream.println(F("Length OK"));
+        controller.stream.println(F("Length OK"));
 #endif
-          memset(gpib.controller.config.vstr, '\0', 48);
-          strncpy(gpib.controller.config.vstr, datastr, dlen);
-          if (gpib.controller.config.isVerb) gpib.controller.stream.print(F("VerStr: "));
-		  gpib.controller.stream.println(gpib.controller.config.vstr);
+          memset(controller.config.vstr, '\0', 48);
+          strncpy(controller.config.vstr, datastr, dlen);
+          if (controller.config.isVerb) controller.stream.print(F("VerStr: "));
+		  controller.stream.println(controller.config.vstr);
         }else{
-          if (gpib.controller.config.isVerb)
-			  gpib.controller.stream.println(F("Length of version string must not exceed 48 characters!"));
-          errBadCmd(gpib);
+          if (controller.config.isVerb)
+			  controller.stream.println(F("Length of version string must not exceed 48 characters!"));
+          errBadCmd(controller);
         }
         return;
       }
       if (strncmp(keyword, "name", 4)==0) {
         if (dlen>0 && dlen<16) {
-          memset(gpib.controller.config.sname, '\0', 16);
-          strncpy(gpib.controller.config.sname, datastr, dlen);
+          memset(controller.config.sname, '\0', 16);
+          strncpy(controller.config.sname, datastr, dlen);
         }else{
-          if (gpib.controller.config.isVerb) gpib.controller.stream.println(F("Length of name must not exceed 15 characters!"));
-          errBadCmd(gpib);
+          if (controller.config.isVerb) controller.stream.println(F("Length of name must not exceed 15 characters!"));
+          errBadCmd(controller);
         }
         return;
       }
       if (strncmp(keyword, "serial", 6)==0) {
         if (dlen < 10) {
-          gpib.controller.config.serial = atol(datastr);
+          controller.config.serial = atol(datastr);
         }else{
-          if (gpib.controller.config.isVerb) gpib.controller.stream.println(F("Serial number must not exceed 9 characters!"));
-          errBadCmd(gpib);
+          if (controller.config.isVerb) controller.stream.println(F("Serial number must not exceed 9 characters!"));
+          errBadCmd(controller);
         }
         return;
       }
-//      errBadCmd(gpib);
+//      errBadCmd(controller);
     }else{
       if (strncmp(keyword, "verstr", 6)==0) {
-        gpib.controller.stream.println(gpib.controller.config.vstr);
+        controller.stream.println(controller.config.vstr);
         return;
       }
       if (strncmp(keyword, "name", 4)==0) {
-        gpib.controller.stream.println(gpib.controller.config.sname);
+        controller.stream.println(controller.config.sname);
         return;
       }
       if (strncmp(keyword, "serial", 6)==0) {
         memset(serialStr, '\0', 10);
-        snprintf(serialStr, 10, "%09lu", gpib.controller.config.serial);  // Max str length = 10-1 i.e 9 digits + null terminator
-        gpib.controller.stream.println(serialStr);
+        snprintf(serialStr, 10, "%09lu", controller.config.serial);  // Max str length = 10-1 i.e 9 digits + null terminator
+        controller.stream.println(serialStr);
         return;
       }
     }
   }
-  errBadCmd(gpib);
+  errBadCmd(controller);
 }
 
 
-void idn_h(char * params, GPIB& gpib){
+void idn_h(char * params, Controller& controller){
   uint16_t val;
   if (params != NULL) {
-    if (notInRange(params, 0, 2, val, gpib)) return;
-    gpib.controller.config.idn = (uint8_t)val;
-    if (gpib.controller.config.isVerb) {
-      gpib.controller.stream.print(F("Sending IDN: "));
-      gpib.controller.stream.print(val ? "Enabled" : "Disabled");
-      if (val==2) gpib.controller.stream.print(F(" with serial number"));
-      gpib.controller.stream.println();
+    if (notInRange(params, 0, 2, val, controller)) return;
+    controller.config.idn = (uint8_t)val;
+    if (controller.config.isVerb) {
+      controller.stream.print(F("Sending IDN: "));
+      controller.stream.print(val ? "Enabled" : "Disabled");
+      if (val==2) controller.stream.print(F(" with serial number"));
+      controller.stream.println();
     };
   } else {
-    gpib.controller.stream.println(gpib.controller.config.idn, DEC);
+    controller.stream.println(controller.config.idn, DEC);
   }
 }
 
@@ -1217,7 +1227,7 @@ void idn_h(char * params, GPIB& gpib){
  * to a uint16_t integer in rval. Returns true if successful,
  * false if not
 */
-bool notInRange(char *param, uint16_t lowl, uint16_t higl, uint16_t &rval, GPIB& gpib) {
+bool notInRange(char *param, uint16_t lowl, uint16_t higl, uint16_t &rval, Controller& controller) {
 
   // Null string passed?
   if (strlen(param) == 0) return true;
@@ -1228,12 +1238,12 @@ bool notInRange(char *param, uint16_t lowl, uint16_t higl, uint16_t &rval, GPIB&
 
   // Check range
   if (rval < lowl || rval > higl) {
-    errBadCmd(gpib);
-    if (gpib.controller.config.isVerb) {
-      gpib.controller.stream.print(F("Valid range is between "));
-      gpib.controller.stream.print(lowl);
-      gpib.controller.stream.print(F(" and "));
-      gpib.controller.stream.println(higl);
+    errBadCmd(controller);
+    if (controller.config.isVerb) {
+      controller.stream.print(F("Valid range is between "));
+      controller.stream.print(lowl);
+      controller.stream.print(F(" and "));
+      controller.stream.println(higl);
     }
     return true;
   }
@@ -1241,6 +1251,6 @@ bool notInRange(char *param, uint16_t lowl, uint16_t higl, uint16_t &rval, GPIB&
 }
 
 /***** Unrecognized command *****/
-void errBadCmd(GPIB& gpib) {
-  gpib.controller.stream.println(F("Unrecognized command"));
+void errBadCmd(Controller& controller) {
+  controller.stream.println(F("Unrecognized command"));
 }
