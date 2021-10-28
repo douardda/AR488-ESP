@@ -145,10 +145,10 @@ void setup() {
   execMacro(0, controller);
 #endif
 
-#ifdef SAY_HELLO
-  controller.stream.println(F("AR488 ready."));
-#endif
-
+	if (controller.verbose()) {
+		controller.stream.println(F("AR488 ready."));
+		controller.showPrompt();
+	}
 }
 /****** End of Arduino standard SETUP procedure *****/
 
