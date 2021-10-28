@@ -281,7 +281,8 @@ void Controller::initConfig()
   /***** Initialise the interface *****/
   // Set default values ({'\0'} sets version string array to null)
   config = {false, false, 2, 0, 1, 0, 0, 0, 0, 1200, 0, {'\0'}, 0, 0, {'\0'}, 0, 0, false};
-  #ifdef ESP32
+
+#ifdef ESP32
   Preferences pref;
   pref.begin("ar488", false);
   config.eot_en = pref.getBool("eot_en", config.eot_en);
@@ -307,7 +308,19 @@ void Controller::initConfig()
 	  pref.getBytes("sname", config.sname, 16);
   }
   pref.end();
-  #endif
+#elif defined(E2END)
+  // Read data from non-volatile memory
+  //(will only read if previous config has already been saved)
+  //  epGetCfg();
+  if (!isEepromClear()) {
+	uint8_t *conf = (uint8_t*) &config;
+	if (!epReadData(conf, sizeof(config))) {
+      // CRC check failed - config data does not match EEPROM
+      epErase();
+      epWriteData(conf, sizeof(config));
+    }
+  }
+#endif
 }
 
 void Controller::saveConfig()
@@ -335,15 +348,17 @@ void Controller::saveConfig()
   pref.putBytes("vstr", config.vstr, 48);
   pref.putBytes("sname", config.sname, 16);
   pref.end();
+
   if (config.isVerb) stream.println(F("Settings saved."));
+
 #elif defined(E2END)
   uint8_t *conf = (uint8_t*) &(config);
-  epWriteData(conf, AR_CFG_SIZE);
+  epWriteData(conf, sizeof(config));
   if (config.isVerb) stream.println(F("Settings saved."));
+
 #else
   stream.println(F("EEPROM not supported."));
 #endif
-
 }
 
 void Controller::sendToInstrument()

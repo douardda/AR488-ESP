@@ -115,23 +115,6 @@ void setup() {
   // Initialise
   controller.initConfig();
 
-/*
-#ifdef E2END
-  // Read data from non-volatile memory
-  //(will only read if previous config has already been saved)
-//  epGetCfg();
-  if (!isEepromClear()) {
-		uint8_t *conf = (uint8_t*) &AR488;
-    if (!epReadData(conf, AR_CFG_SIZE)) {
-      // CRC check failed - config data does not match EEPROM
-      epErase();
-      initAR488();
-      epWriteData(conf, AR_CFG_SIZE);
-    }
-  }
-#endif
-*/
-
   // Initialize the interface in device mode
   if (controller.config.cmode == 1) gpib.initDevice();
   // Initialize the interface in controller mode

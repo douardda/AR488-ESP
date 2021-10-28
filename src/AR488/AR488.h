@@ -4,6 +4,10 @@
 #include <Arduino.h>
 #include "AR488_Config.h"
 
+#ifdef ESP32
+#undef E2END
+#endif
+
 #ifdef E2END
   #include "AR488_Eeprom.h"
   #include <EEPROM.h>
