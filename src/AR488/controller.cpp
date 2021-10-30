@@ -7,6 +7,11 @@
 #include <Preferences.h>
 #endif
 
+#ifdef E2END
+#include "AR488_Eeprom.h"
+#include <EEPROM.h>
+#endif
+
 #ifdef AR488_WIFI_EN
 #include <WiFi.h>
 #include <WiFiMulti.h>
@@ -91,7 +96,6 @@ Controller::Controller(Stream& stream):
 #endif
 {
   cmdstream = &serialstream;
-  initConfig();
 }
 
 /***** Add character to the buffer and parse *****/
@@ -344,6 +348,17 @@ void Controller::initConfig()
   if (strlen(config.ssid) > 0)
 	setupWifi();
 #endif
+
+  // Initialize the interface in device mode
+  if (config.cmode == 1)
+	gpib->initDevice();
+  // Initialize the interface in controller mode
+  else
+	gpib->initController();
+
+  gpib->clearATN();
+  gpib->clearSRQ();
+
 }
 
 void Controller::saveConfig()

@@ -7,21 +7,12 @@
   #include <avr/wdt.h>
 #endif
 
-//#pragma GCC diagnostic pop
-
-#include "AR488_Config.h"
-#include "AR488_Layouts.h"
-
-#ifdef USE_INTERRUPTS
-  #ifdef __AVR__
-    #include <avr/interrupt.h>
-  #endif
-#endif
-
-#ifdef E2END
-  #include "AR488_Eeprom.h"
-  #include <EEPROM.h>
-#endif
+#include "AR488.h"
+#include "serial.h"
+#include "controller.h"
+#include "commands.h"
+#include "gpib.h"
+#include "macros.h"
 
 #ifdef AR_BT_EN
   #include "AR488_BT.h"
@@ -63,35 +54,15 @@
 */
 
 
-/*********************************/
-/***** CONFIGURATION SECTION *****/
-/***** vvvvvvvvvvvvvvvvvvvvv *****/
-// SEE >>>>> Config.h <<<<<
-/***** ^^^^^^^^^^^^^^^^^^^^^ *****/
-/***** CONFIGURATION SECTION *****/
-/*********************************/
-
-
-#include "AR488.h"
-#include "serial.h"
-#include "controller.h"
-#include "commands.h"
-#include "gpib.h"
-#include "macros.h"
+/**************************/
+/***** CONFIGURATION  *****/
+/** SEE AR488_Config.h  ***/
+/**************************/
 
 
 /****** Global variables with volatile values related to controller state *****/
 Controller controller(getSerial());
 GPIB gpib(controller);
-
-/***** ^^^^^^^^^^^^^^^^^^^^^^^^ *****/
-/***** COMMON VARIABLES SECTION *****/
-/************************************/
-
-
-/*******************************/
-/***** COMMON CODE SECTION *****/
-/***** vvvvvvvvvvvvvvvvvvv *****/
 
 
 /******  Arduino standard SETUP procedure *****/
@@ -111,17 +82,8 @@ void setup() {
   // Initialise parse buffer
   controller.flushPbuf();
 	initSerial();
-
   // Initialise
   controller.initConfig();
-
-  // Initialize the interface in device mode
-  if (controller.config.cmode == 1) gpib.initDevice();
-  // Initialize the interface in controller mode
-	else gpib.initController();
-
-  gpib.clearATN();
-  gpib.clearSRQ();
 
 #if defined(USE_MACROS) && defined(RUN_STARTUP)
   // Run startup macro
@@ -250,15 +212,6 @@ void loop() {
   delayMicroseconds(5);
 }
 /***** END MAIN LOOP *****/
-
-
-
-
-
-/*************************************/
-/***** Device operation routines *****/
-/*************************************/
-
 
 
 #ifdef DEBUG1

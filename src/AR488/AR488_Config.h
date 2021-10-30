@@ -9,7 +9,6 @@
 /***** Firmware version *****/
 #define FWVER "AR488 GPIB controller, ver. 0.49.14, 02/03/2021"
 
-
 /***** BOARD CONFIGURATION *****/
 /*
  * Platform will be selected automatically based on
