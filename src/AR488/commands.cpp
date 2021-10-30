@@ -872,12 +872,10 @@ void verb_h(char *params, Controller& controller) {
  *  NOTE: some instrument software requires a sepcific version string to ID the interface
  */
 void setvstr_h(char *params, Controller& controller) {
-  uint8_t plen;
   char idparams[64];
-  plen = strlen(params);
   memset(idparams, '\0', 64);
   strncpy(idparams, "verstr ", 7);
-  strncat(idparams, params, plen);
+  strncat(idparams, params, 64-7);
 
 /*
 controller.cmdstream->print(F("Plen: "));
