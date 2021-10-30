@@ -129,7 +129,7 @@ void setup() {
 #endif
 
 	if (controller.verbose()) {
-		controller.stream.println(F("AR488 ready."));
+		controller.cmdstream->println(F("AR488 ready."));
 		controller.showPrompt();
 	}
 }
@@ -230,14 +230,19 @@ void loop() {
 
   // IDN query ?
   if (controller.sendIdn) {
-    if (controller.config.idn==1) controller.stream.println(controller.config.sname);
+    if (controller.config.idn==1) controller.cmdstream->println(controller.config.sname);
     if (controller.config.idn==2) {
-				controller.stream.print(controller.config.sname);
-				controller.stream.print("-");
-				controller.stream.println(controller.config.serial);
+				controller.cmdstream->print(controller.config.sname);
+				controller.cmdstream->print("-");
+				controller.cmdstream->println(controller.config.serial);
 		}
     controller.sendIdn = false;
   }
+
+#ifdef AR488_WIFI_EN
+	// check for new tcp cnx
+	controller.connectWifi();
+#endif
 
   // Check serial buffer
   controller.serialIn_h();

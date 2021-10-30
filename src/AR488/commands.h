@@ -57,6 +57,9 @@ void xdiag_h(char *params, Controller&);
 void tmbus_h(char *params, Controller&);
 void id_h(char *params, Controller&);
 void idn_h(char * params, Controller&);
+#ifdef AR488_WIFI_EN
+void wifi_h(char *params, Controller&);
+#endif
 
 
 #endif

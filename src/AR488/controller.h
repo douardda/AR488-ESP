@@ -5,6 +5,11 @@
 #include "AR488.h"
 //#include "gpib.h"
 
+#ifdef AR488_WIFI_EN
+#include <WiFi.h>
+#include <WiFiMulti.h>
+#endif
+
 class GPIB;
 
 #define PBSIZE 128
@@ -32,6 +37,10 @@ typedef struct {
   uint32_t serial;  // Serial number
   uint8_t idn;      // Send ID in response to *idn? 0=disable, 1=send name; 2=send name+serial
   bool isVerb;      // Verbose mode
+#ifdef AR488_WIFI_EN
+  char ssid[64];
+  char passkey[64];
+#endif
 } AR488Conf;
 
 class Controller {
@@ -51,11 +60,24 @@ public:
   void sendToInstrument();
   void setGPIB(GPIB *gpib) {this->gpib = gpib;};
   void execCmd();
+#ifdef AR488_WIFI_EN
+  void setupWifi();
+  void connectWifi();
+  void scanWifi();
+#endif
 
 public:
   AR488Conf config;
-  Stream &stream;
+  Stream &serialstream;
+  Stream *cmdstream;
   GPIB *gpib = NULL;
+
+private:
+#ifdef AR488_WIFI_EN
+  WiFiMulti wifimulti;
+  WiFiServer wifiserver;
+  WiFiClient serverclient;
+#endif
 
 /***** PARSE BUFFERS *****/
 /*

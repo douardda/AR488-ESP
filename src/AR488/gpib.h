@@ -53,12 +53,11 @@ public:
   bool verbose() {return controller.config.isVerb;}
 
 private:
-  Stream &outstream;
+  Controller &controller;
   AR488Conf &config;
 
 public:
-  Controller &controller;
-  //
+  // XXX should not be public...
   bool deviceAddressing = true;
   uint8_t cstate = 0;     // GPIB control state
   uint8_t tranBrk = 0;    // Transmission break on 1=++, 2=EOI, 3=ATN 4=UNL

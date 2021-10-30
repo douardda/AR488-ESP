@@ -21,7 +21,6 @@ static void ISR_SRQ() {
 
 
 GPIB::GPIB(Controller& controller):
-		outstream(controller.stream),
 		controller(controller),
 		config(controller.config)
 {
@@ -102,9 +101,9 @@ bool GPIB::gpibSendCmd(uint8_t cmdByte) {
   // Send the command
   stat = gpibWriteByte(cmdByte);
   if (stat && verbose()) {
-    outstream.print(F("gpibSendCmd: failed to send command "));
-    outstream.print(cmdByte, HEX);
-    outstream.println(F(" to device"));
+    controller.cmdstream->print(F("gpibSendCmd: failed to send command "));
+    controller.cmdstream->print(cmdByte, HEX);
+    controller.cmdstream->println(F(" to device"));
   }
 
   // Return to controller idle state
@@ -119,8 +118,8 @@ bool GPIB::gpibSendCmd(uint8_t cmdByte) {
 void GPIB::gpibSendStatus() {
   // Have been addressed and polled so send the status byte
   if (verbose()) {
-    outstream.print(F("Sending status byte: "));
-    outstream.println(config.stat);
+    controller.cmdstream->print(F("Sending status byte: "));
+    controller.cmdstream->println(config.stat);
   };
   setGpibControls(DTAS);
   gpibWriteByte(config.stat);
@@ -140,9 +139,9 @@ void GPIB::gpibSendData(char *data, uint8_t dsize, bool bufferFull) {
       // Address device to listen
       if (addrDev(config.paddr, 0)) {
         if (verbose()) {
-          outstream.print(F("gpibSendData: failed to address device "));
-          outstream.print(config.paddr);
-          outstream.println(F(" to listen"));
+          controller.cmdstream->print(F("gpibSendData: failed to address device "));
+          controller.cmdstream->print(config.paddr);
+          controller.cmdstream->println(F(" to listen"));
         }
         return;
       }
@@ -220,7 +219,7 @@ void GPIB::gpibSendData(char *data, uint8_t dsize, bool bufferFull) {
       if (deviceAddressing) {
         // Untalk controller and unlisten bus
         if (uaddrDev()) {
-          if (verbose()) outstream.println(F("gpibSendData: Failed to unlisten bus"));
+          if (verbose()) controller.cmdstream->println(F("gpibSendData: Failed to unlisten bus"));
         }
 
 #ifdef DEBUG3
@@ -271,9 +270,9 @@ bool GPIB::gpibReceiveData() {
     // Address device to talk
     if (addrDev(config.paddr, 1)) {
       if (verbose()) {
-        outstream.print(F("Failed to address the device"));
-        outstream.print(config.paddr);
-        outstream.println(F(" to talk"));
+        controller.cmdstream->print(F("Failed to address the device"));
+        controller.cmdstream->print(config.paddr);
+        controller.cmdstream->println(F(" to talk"));
       }
     }
     // Wait for instrument ready
@@ -334,7 +333,7 @@ bool GPIB::gpibReceiveData() {
     dbSerial->print(bytes[0], HEX), dbSerial->print(' ');
 #else
     // Output the character to the serial port
-    outstream.print((char)bytes[0]);
+    controller.cmdstream->print((char)bytes[0]);
 #endif
 
     // Byte counter
@@ -367,15 +366,15 @@ bool GPIB::gpibReceiveData() {
 
   // End of data - if verbose, report how many bytes read
   if (verbose()) {
-    outstream.print(F("Bytes read: "));
-    outstream.println(x);
+    controller.cmdstream->print(F("Bytes read: "));
+    controller.cmdstream->println(x);
   }
 
   // Detected that EOI has been asserted
   if (eoiDetected) {
-    if (verbose()) outstream.println(F("EOI detected!"));
+    if (verbose()) controller.cmdstream->println(F("EOI detected!"));
     // If eot_enabled then add EOT character
-    if (config.eot_en) outstream.print(config.eot_ch);
+    if (config.eot_en) controller.cmdstream->print(config.eot_ch);
   }
 
   // Return rEoi to previous state
@@ -383,8 +382,8 @@ bool GPIB::gpibReceiveData() {
 
   // Verbose timeout error
   if (r > 0) {
-    if (verbose() && r == 1) outstream.println(F("Timeout waiting for sender!"));
-    if (verbose() && r == 2) outstream.println(F("Timeout waiting for transfer to complete!"));
+    if (verbose() && r == 1) controller.cmdstream->println(F("Timeout waiting for sender!"));
+    if (verbose() && r == 2) controller.cmdstream->println(F("Timeout waiting for transfer to complete!"));
   }
 
   // Return controller to idle state
@@ -392,7 +391,7 @@ bool GPIB::gpibReceiveData() {
 
     // Untalk bus and unlisten controller
     if (uaddrDev()) {
-      if (verbose()) outstream.print(F("gpibSendData: Failed to untalk bus"));
+      if (verbose()) controller.cmdstream->print(F("gpibSendData: Failed to untalk bus"));
     }
 
     // Set controller back to idle state
@@ -482,7 +481,7 @@ uint8_t GPIB::gpibReadByte(uint8_t *db, bool *eoi) {
 
   // Wait for DAV to go LOW indicating talker has finished setting data lines..
   if (Wait_on_pin_state(LOW, DAV, config.rtmo))  {
-    if (verbose()) outstream.println(F("gpibReadByte: timeout waiting for DAV to go LOW"));
+    if (verbose()) controller.cmdstream->println(F("gpibReadByte: timeout waiting for DAV to go LOW"));
     setGpibState(0b00000000, 0b00000100, 0);
     // No more data for you?
     return 1;
@@ -502,7 +501,7 @@ uint8_t GPIB::gpibReadByte(uint8_t *db, bool *eoi) {
 
   // Wait for DAV to go HIGH indicating data no longer valid (i.e. transfer complete)
   if (Wait_on_pin_state(HIGH, DAV, config.rtmo))  {
-    if (verbose()) outstream.println(F("gpibReadByte: timeout waiting DAV to go HIGH"));
+    if (verbose()) controller.cmdstream->println(F("gpibReadByte: timeout waiting DAV to go HIGH"));
     return 2;
   }
 
@@ -546,12 +545,12 @@ bool GPIB::gpibWriteByteHandshake(uint8_t db) {
 
     // Wait for NDAC to go LOW (indicating that devices are at attention)
   if (Wait_on_pin_state(LOW, NDAC, config.rtmo)) {
-    if (verbose()) outstream.println(F("gpibWriteByte: timeout waiting for receiver attention [NDAC asserted]"));
+    if (verbose()) controller.cmdstream->println(F("gpibWriteByte: timeout waiting for receiver attention [NDAC asserted]"));
     return true;
   }
   // Wait for NRFD to go HIGH (indicating that receiver is ready)
   if (Wait_on_pin_state(HIGH, NRFD, config.rtmo))  {
-    if (verbose()) outstream.println(F("gpibWriteByte: timeout waiting for receiver ready - [NRFD unasserted]"));
+    if (verbose()) controller.cmdstream->println(F("gpibWriteByte: timeout waiting for receiver ready - [NRFD unasserted]"));
     return true;
   }
 
@@ -563,13 +562,13 @@ bool GPIB::gpibWriteByteHandshake(uint8_t db) {
 
   // Wait for NRFD to go LOW (receiver accepting data)
   if (Wait_on_pin_state(LOW, NRFD, config.rtmo))  {
-    if (verbose()) outstream.println(F("gpibWriteByte: timeout waiting for data to be accepted - [NRFD asserted]"));
+    if (verbose()) controller.cmdstream->println(F("gpibWriteByte: timeout waiting for data to be accepted - [NRFD asserted]"));
     return true;
   }
 
   // Wait for NDAC to go HIGH (data accepted)
   if (Wait_on_pin_state(HIGH, NDAC, config.rtmo))  {
-    if (verbose()) outstream.println(F("gpibWriteByte: timeout waiting for data accepted signal - [NDAC unasserted]"));
+    if (verbose()) controller.cmdstream->println(F("gpibWriteByte: timeout waiting for data accepted signal - [NDAC unasserted]"));
     return true;
   }
 
@@ -914,31 +913,31 @@ void GPIB::mta_h(){
 /***** Selected Device Clear *****/
 void GPIB::sdc_h() {
   // If being addressed then reset
-  if (verbose()) outstream.println(F("Resetting..."));
+  if (verbose()) controller.cmdstream->println(F("Resetting..."));
 #ifdef DEBUG5
   dbSerial->print(F("Reset adressed to me: ")); dbSerial->println(aTl);
 #endif
   if (aTl) controller.reset();
-  if (verbose()) outstream.println(F("Reset failed."));
+  if (verbose()) controller.cmdstream->println(F("Reset failed."));
 }
 
 
 /***** Serial Poll Disable *****/
 void GPIB::spd_h() {
-  if (verbose()) outstream.println(F("<- serial poll request ended."));
+  if (verbose()) controller.cmdstream->println(F("<- serial poll request ended."));
 }
 
 
 /***** Serial Poll Enable *****/
 void GPIB::spe_h() {
-  if (verbose()) outstream.println(F("Serial poll request received from controller ->"));
+  if (verbose()) controller.cmdstream->println(F("Serial poll request received from controller ->"));
   gpibSendStatus();
-  if (verbose()) outstream.println(F("Status sent."));
+  if (verbose()) controller.cmdstream->println(F("Status sent."));
   // Clear the SRQ bit
   config.stat = config.stat & ~0x40;
   // Clear the SRQ signal
   clrSrqSig();
-  if (verbose()) outstream.println(F("SRQ bit cleared (if set)."));
+  if (verbose()) controller.cmdstream->println(F("SRQ bit cleared (if set)."));
 }
 
 
@@ -995,6 +994,6 @@ void GPIB::assertIfc() {
     // De-assert IFC
     setGpibState(0b00000001, 0b00000001, 0);
     if (verbose())
-	  outstream.println(F("IFC signal asserted for 150 microseconds"));
+	  controller.cmdstream->println(F("IFC signal asserted for 150 microseconds"));
   }
 }

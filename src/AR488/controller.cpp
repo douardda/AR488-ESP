@@ -7,6 +7,11 @@
 #include <Preferences.h>
 #endif
 
+#ifdef AR488_WIFI_EN
+#include <WiFi.h>
+#include <WiFiMulti.h>
+#endif
+
 // TODO: dbSerial
 
 /*
@@ -80,9 +85,13 @@
 
 
 Controller::Controller(Stream& stream):
-	stream(stream)
+	serialstream(stream)
+#ifdef AR488_WIFI_EN
+	, wifimulti(), wifiserver(23), serverclient()
+#endif
 {
-	initConfig();
+  cmdstream = &serialstream;
+  initConfig();
 }
 
 /***** Add character to the buffer and parse *****/
@@ -92,7 +101,6 @@ uint8_t Controller::parseInput(char c) {
 
   // Read until buffer full (buffer-size - 2 characters)
   if (pbPtr < PBSIZE) {
-		//if (AR488.isVerb) stream.print(c);  // Humans like to see what they are typing...
     // Actions on specific characters
     switch (c) {
       // Carriage return or newline? Then process the line
@@ -110,7 +118,6 @@ uint8_t Controller::parseInput(char c) {
             //showPrompt();
             return 0;
           } else {
-			//if (AR488.isVerb) stream.println();  // Move to new line
 #ifdef DEBUG1
             dbSerial->print(F("parseInput: Received ")); dbSerial->println(pBuf);
 #endif
@@ -157,11 +164,9 @@ uint8_t Controller::parseInput(char c) {
           if (pbPtr < 2) isPlusEscaped = true;
         }
         addPbuf(c);
-//        if (isVerb) stream.print(c);
         break;
       // Something else?
       default: // any char other than defined above
-//        if (isVerb) stream.print(c);  // Humans like to see what they are typing...
         // Buffer contains '++' (start of command). Stop sending data to serial port by halting GPIB receive.
         addPbuf(c);
         isEsc = false;
@@ -170,7 +175,7 @@ uint8_t Controller::parseInput(char c) {
   if (pbPtr >= PBSIZE) {
     if (isCmd(pBuf) && !r) {  // Command without terminator and buffer full
       if (config.isVerb) {
-        stream.println(F("ERROR - Command buffer overflow!"));
+        cmdstream->println(F("ERROR - Command buffer overflow!"));
       }
       flushPbuf();
     }else{  // Buffer contains data and is full, so process the buffer (send data via GPIB)
@@ -225,7 +230,7 @@ void Controller::flushPbuf() {
 /***** Show a prompt *****/
 void Controller::showPrompt() {
   if(verbose())
-	stream.print("> ");
+	cmdstream->print("> ");
 }
 
 
@@ -242,8 +247,8 @@ void Controller::showPrompt() {
 uint8_t Controller::serialIn_h() {
   uint8_t bufferStatus = 0;
   // Parse serial input until we have detected a line terminator
-  while (stream.available() && bufferStatus==0) {   // Parse while characters available and line is not complete
-	bufferStatus = parseInput(stream.read());
+  while (cmdstream->available() && bufferStatus==0) {   // Parse while characters available and line is not complete
+	bufferStatus = parseInput(cmdstream->read());
   }
 
 #ifdef DEBUG1
@@ -281,7 +286,11 @@ void Controller::initConfig()
 {
   /***** Initialise the interface *****/
   // Set default values ({'\0'} sets version string array to null)
-  config = {false, false, 2, 0, 1, 0, 0, 0, 0, 1200, 0, {'\0'}, 0, 0, {'\0'}, 0, 0, false};
+  config = {false, false, 2, 0, 1, 0, 0, 0, 0, 1200, 0, {'\0'}, 0, 0, {'\0'}, 0, 0, false,
+#ifdef AR488_WIFI_EN
+			{'\0'}, {'\0'}
+#endif
+  };
 
 #ifdef ESP32
   Preferences pref;
@@ -303,11 +312,19 @@ void Controller::initConfig()
   config.idn = pref.getUInt("idn", config.idn);
   config.isVerb = pref.getUInt("isVerb", config.isVerb);
   if (pref.isKey("vstr")) {
-	  pref.getBytes("vstr", config.vstr, 48);
+	pref.getBytes("vstr", config.vstr, 48);
   }
   if (pref.isKey("sname")) {
-	  pref.getBytes("sname", config.sname, 16);
+	pref.getBytes("sname", config.sname, 16);
   }
+#ifdef AR488_WIFI_EN
+  if (pref.isKey("ssid")) {
+	pref.getBytes("ssid", config.ssid, 64);
+  }
+  if (pref.isKey("passkey")) {
+	pref.getBytes("passkey", config.passkey, 64);
+  }
+#endif
   pref.end();
 #elif defined(E2END)
   // Read data from non-volatile memory
@@ -321,6 +338,11 @@ void Controller::initConfig()
       epWriteData(conf, sizeof(config));
     }
   }
+#endif
+
+#ifdef AR488_WIFI_EN
+  if (strlen(config.ssid) > 0)
+	setupWifi();
 #endif
 }
 
@@ -348,17 +370,22 @@ void Controller::saveConfig()
 
   pref.putBytes("vstr", config.vstr, 48);
   pref.putBytes("sname", config.sname, 16);
-  pref.end();
 
-  if (config.isVerb) stream.println(F("Settings saved."));
+#ifdef AR488_WIFI_EN
+  pref.putBytes("ssid", config.ssid, 64);
+  pref.putBytes("passkey", config.passkey, 64);
+#endif
+
+  pref.end();
+  if (config.isVerb) cmdstream->println(F("Settings saved."));
 
 #elif defined(E2END)
   uint8_t *conf = (uint8_t*) &(config);
   epWriteData(conf, sizeof(config));
-  if (config.isVerb) stream.println(F("Settings saved."));
+  if (config.isVerb) cmdstream->println(F("Settings saved."));
 
 #else
-  stream.println(F("EEPROM not supported."));
+  cmdstream->println(F("EEPROM not supported."));
 #endif
 }
 
@@ -373,7 +400,8 @@ void Controller::sendToInstrument()
 
 
 /***** Execute a command *****/
-void Controller::execCmd() {
+void Controller::execCmd()
+{
   char line[PBSIZE];
   int dsize = pbPtr;
   // Copy collected chars to line buffer
@@ -401,3 +429,97 @@ void Controller::execCmd() {
 
   showPrompt();
 }
+
+#ifdef AR488_WIFI_EN
+void Controller::setupWifi()
+{
+  if (strlen(config.ssid) > 0)
+  {
+	wifimulti.addAP(config.ssid, config.passkey);
+
+	serialstream.print(F("Connecting to Wifi: "));
+	serialstream.println(config.ssid);
+
+	for (int loops = 10; loops > 0; loops--) {
+    if (wifimulti.run() == WL_CONNECTED) {
+      serialstream.println("");
+      serialstream.print(F("WiFi connected "));
+      serialstream.print(F("IP address: "));
+      serialstream.println(WiFi.localIP());
+	  wifiserver.begin();
+	  wifiserver.setNoDelay(true);
+      break;
+    } else {
+      serialstream.println(loops);
+      delay(1000);
+    }
+	}
+  if (wifimulti.run() != WL_CONNECTED) {
+    serialstream.println(F("WiFi connect failed"));
+    delay(1000);
+  }
+  }
+}
+
+void Controller::connectWifi()
+{
+  if (WiFi.status() == WL_CONNECTED) {
+    //check if there are any new clients
+    if (wifiserver.hasClient()) {
+	  if (!serverclient || !serverclient.connected())
+	  {
+		if (serverclient) serverclient.stop();
+		serverclient = wifiserver.available();
+		if (!serverclient)
+		  serialstream.println(F("available broken"));
+		serialstream.print(F("New TCP client: "));
+		serialstream.println(serverclient.remoteIP());
+		serialstream.println(F("Moving console to TCP client"));
+		cmdstream = (Stream*) &serverclient;
+		showPrompt();
+	  }
+	  else
+	  {
+        //no free/disconnected spot so reject
+        wifiserver.available().stop();
+		serialstream.println(F("Moving console to serial interface"));
+		cmdstream = (Stream*) &serialstream;
+		showPrompt();
+      }
+    } else {
+	  if (!serverclient.connected() && (cmdstream == (Stream*)&serverclient)) {
+		serverclient.stop();
+		// client got disconnected
+		serialstream.println(F("Moving console to serial interface"));
+		cmdstream = (Stream*) &serialstream;
+		showPrompt();
+	  }
+	}
+  }
+}
+
+void Controller::scanWifi()
+{
+
+  int n = WiFi.scanNetworks();
+  serialstream.println("scan done");
+  if (n == 0) {
+	serialstream.println("no networks found");
+  } else {
+	serialstream.print(n);
+	serialstream.println(" networks found");
+	for (int i = 0; i < n; ++i) {
+	  // Print SSID and RSSI for each network found
+	  serialstream.print(i + 1);
+	  serialstream.print(": ");
+	  serialstream.print(WiFi.SSID(i));
+	  serialstream.print(" (");
+	  serialstream.print(WiFi.RSSI(i));
+	  serialstream.print(")");
+	  serialstream.println((WiFi.encryptionType(i) == WIFI_AUTH_OPEN)?" ":"*");
+	  delay(10);
+	}
+  }
+  serialstream.println("");
+}
+#endif
