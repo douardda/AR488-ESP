@@ -12,10 +12,6 @@
 #endif
 #endif
 
-#ifdef ESP32
-#undef E2END
-#endif
-
 /*********************************************/
 /***** GPIB COMMAND & STATUS DEFINITIONS *****/
 /***** vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv *****/

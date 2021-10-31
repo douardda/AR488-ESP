@@ -5,9 +5,7 @@
 
 #ifdef ESP32
 #include <Preferences.h>
-#endif
-
-#ifdef E2END
+#elif defined(E2END)
 #include "AR488_Eeprom.h"
 #include <EEPROM.h>
 #endif
