@@ -133,12 +133,19 @@ void loop() {
  * above loop
  * lnRdy=1: process command;
  * lnRdy=2: send data to Gpib
+ * lnRdy=3: break
+ * lnRdy=4: macro edition in progress, add data to current macro
  */
 
   // lnRdy=1: received a command so execute it...
   if (controller.lnRdy == 1) {
     controller.execCmd();
   }
+#if defined(USE_MACROS)
+  else if (controller.lnRdy == 4) {
+    controller.appendToMacro();
+  }
+#endif
 
   // Controller mode:
   if (controller.config.cmode == 2) {

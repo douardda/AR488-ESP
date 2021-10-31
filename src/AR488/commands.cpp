@@ -994,22 +994,29 @@ void repeat_h(char *params, Controller& controller) {
 void macro_h(char *params, Controller& controller) {
 #ifdef USE_MACROS
   uint16_t val;
-  const char * macro;
+  uint8_t dlen = 0;
+  char * macro; // Pointer to keyword following ++id
+  char * keyword; // Pointer to supplied data (remaining characters in buffer)
 
   if (params != NULL) {
-    if (notInRange(params, 0, 9, val, controller)) return;
-    //    execMacro((uint8_t)val);
-    controller.runMacro = (uint8_t)val;
+    macro = strtok(params, " \t");
+    if (notInRange(macro, 0, 9, val, controller)) return;
+    keyword = macro + strlen(macro) + 1;
+    dlen = strlen(keyword);
+	if (dlen) {
+      if (strncmp(keyword, "set", 3)==0) {
+		controller.editMacro = (uint8_t)val;
+	  }
+	  else if (strncmp(keyword, "del", 3)==0) {
+		controller.deleteMacro((uint8_t)val);
+	  }
+	  else
+		// invalid sub command
+		return;
+	} else
+	  controller.runMacro = (uint8_t)val;
   } else {
-    for (int i = 0; i < 10; i++) {
-	  macro = (char*)pgm_read_word(macros + i);
-      //      controller.cmdstream->print(i);controller.cmdstream->print(F(": "));
-      if (strlen_P(macro) > 0) {
-        controller.cmdstream->print(i);
-        controller.cmdstream->print(" ");
-      }
-    }
-    controller.cmdstream->println();
+	controller.displayMacros();
   }
 #else
   memset(params, '\0', 5);
@@ -1279,6 +1286,10 @@ void wifi_h(char *params, Controller& controller) {
       }
       else if (strncmp(keyword, "connect", 7)==0) {
         controller.setupWifi();
+        return;
+      }
+      else if (strncmp(keyword, "scan", 4)==0) {
+        controller.scanWifi();
         return;
       }
     }

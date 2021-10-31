@@ -65,7 +65,11 @@ public:
   void connectWifi();
   void scanWifi();
 #endif
-
+#if defined (USE_MACROS)
+  void displayMacros();
+  void appendToMacro();
+  void deleteMacro(uint8_t);
+#endif
 public:
   AR488Conf config;
   Stream &serialstream;
@@ -98,6 +102,7 @@ public:  // TODO: better than this...
   bool isTO = false;            // Talk only mode flag
   bool isSrqa = false;          // SRQ auto mode
   uint8_t runMacro = 0;         // Macro to run next loop
+  uint8_t editMacro = 255;      // Macro beinf edited
   bool sendIdn = false;         // Send response to *idn?
 
 };

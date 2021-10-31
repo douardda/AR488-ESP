@@ -18,9 +18,17 @@
 #include "AR488_Config.h"
 #include "controller.h"
 
-/*** DO NOT MODIFY ***/
-/*** vvvvvvvvvvvvv ***/
+#define NUM_MACROS 10
 
+#ifdef ESP32
+// use the Preferences lib (aka EEPROM) for macros on ESP32
+#include <Preferences.h>
+void execMacro(uint8_t, Controller& controller);
+void saveMacro(uint8_t, char*, Controller& controller);
+void deleteMacro(uint8_t, char*, Controller& controller);
+
+
+#else
 /***** STARTUP MACRO *****/
 const char startup_macro[] PROGMEM = {MACRO_0};
 
@@ -59,6 +67,7 @@ void execMacro(uint8_t idx, Controller& controller);
 /***** ^^^^^^^^^^^^^^^^^^^^ *****/
 /***** MACRO CONFIG SECTION *****/
 /********************************/
+#endif
 
 #define MACROS_H
 #endif

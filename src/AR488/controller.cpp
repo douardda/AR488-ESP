@@ -15,6 +15,10 @@
 #include <WiFiMulti.h>
 #endif
 
+#if defined(USE_MACROS)
+#include "macros.h"
+#endif
+
 // TODO: dbSerial
 
 /*
@@ -106,8 +110,10 @@ uint8_t Controller::parseInput(char c) {
     // Actions on specific characters
     switch (c) {
       // Carriage return or newline? Then process the line
-      case CR:
       case LF:
+		// just ignore LF for now...
+		break;
+      case CR:
         // If escaped just add to buffer
         if (isEsc) {
           addPbuf(c);
@@ -116,13 +122,15 @@ uint8_t Controller::parseInput(char c) {
           // Carriage return on blank line?
           // Note: for data CR and LF will always be escaped
           if (pbPtr == 0) {
+#ifdef USE_MACROS
+			if (editMacro < NUM_MACROS) {
+			  flushPbuf();
+			  return 4;  //
+			}
+#endif
             flushPbuf();
-            //showPrompt();
             return 0;
           } else {
-#ifdef DEBUG1
-            dbSerial->print(F("parseInput: Received ")); dbSerial->println(pBuf);
-#endif
             // Buffer starts with ++ and contains at least 3 characters - command?
             if (pbPtr>2 && isCmd(pBuf) && !isPlusEscaped) {
               // Exclamation mark (break read loop command)
@@ -142,10 +150,6 @@ uint8_t Controller::parseInput(char c) {
               r = 2;
             }
             isPlusEscaped = false;
-#ifdef DEBUG1
-            dbSerial->print(F("R: "));dbSerial->println(r);
-#endif
-//            return r;
           }
         }
         break;
@@ -232,7 +236,10 @@ void Controller::flushPbuf() {
 /***** Show a prompt *****/
 void Controller::showPrompt() {
   if(verbose())
-	cmdstream->print("> ");
+	if (editMacro < NUM_MACROS)
+	  cmdstream->print("| ");
+	else
+	  cmdstream->print("> ");
 }
 
 
@@ -251,6 +258,12 @@ uint8_t Controller::serialIn_h() {
   // Parse serial input until we have detected a line terminator
   while (cmdstream->available() && bufferStatus==0) {   // Parse while characters available and line is not complete
 	bufferStatus = parseInput(cmdstream->read());
+	/*
+	  serialstream.print(F("BufferStatus: "));
+	  serialstream.println(bufferStatus);
+	  serialstream.print(F("pbPtr: "));
+	  serialstream.println(pbPtr);
+	*/
   }
 
 #ifdef DEBUG1
@@ -261,6 +274,11 @@ uint8_t Controller::serialIn_h() {
 #endif
 
   lnRdy = bufferStatus;
+#if defined(USE_MACROS)
+  if (lnRdy > 0 && editMacro < NUM_MACROS)
+	// we have a parsed line, and a macro being edited
+	lnRdy = 4;
+#endif
   return lnRdy;
 }
 
@@ -296,7 +314,7 @@ void Controller::initConfig()
 
 #ifdef ESP32
   Preferences pref;
-  pref.begin("ar488", false);
+  pref.begin("ar488", true);
   config.eot_en = pref.getBool("eot_en", config.eot_en);
   config.eoi = pref.getBool("eoi", config.eoi);
   config.cmode = pref.getUChar("cmode", config.cmode);
@@ -328,6 +346,7 @@ void Controller::initConfig()
   }
 #endif
   pref.end();
+
 #elif defined(E2END)
   // Read data from non-volatile memory
   //(will only read if previous config has already been saved)
@@ -535,4 +554,75 @@ void Controller::scanWifi()
   }
   serialstream.println("");
 }
+#endif
+
+#if defined (USE_MACROS)
+void Controller::displayMacros()
+{
+#if defined(ESP32)
+  Preferences pref;
+  char key[] = {'\x00', '\x00'};
+  String macro;
+  pref.begin("macros", true);
+  for(int i=0; i<NUM_MACROS; i++)
+  {
+	key[0] = i + 48;  // 48 = ord('0')
+	if (pref.isKey(key))
+	{
+	  macro = pref.getString(key);
+	  cmdstream->print("Macro ");
+	  cmdstream->print(i);
+	  cmdstream->println(":");
+	  cmdstream->println(macro);
+	}
+  }
+  pref.end();
+#else
+  for (int i = 0; i < 10; i++) {
+	macro = (char*)pgm_read_word(macros + i);
+	//      controller.cmdstream->print(i);controller.cmdstream->print(F(": "));
+	if (strlen_P(macro) > 0) {
+	  controller.cmdstream->print(i);
+	  controller.cmdstream->print(" ");
+      }
+  }
+  controller.cmdstream->println();
+#endif
+}
+
+void Controller::appendToMacro()
+{
+  Preferences pref;
+  String macro;
+  const char key[] = {48 + editMacro, '\x00'};
+
+  macro = pBuf;
+  macro.trim();
+
+  if (macro.length() > 0)
+  {
+	pref.begin("macros", false);
+	macro += "\n";
+	if (pref.isKey(key))
+	  macro = pref.getString(key) + macro;
+	pref.putString(key, macro);
+	pref.end();
+  }
+  else
+	// blank line: end of macro edit mode
+	editMacro = 255;
+  flushPbuf();
+  showPrompt();
+}
+
+void Controller::deleteMacro(uint8_t macro)
+{
+  const char key[] = {48 + editMacro, '\x00'};
+  Preferences pref;
+  pref.begin("macros", false);
+  if (pref.isKey(key))
+	pref.remove(key);
+  pref.end();
+}
+
 #endif
