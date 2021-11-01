@@ -236,9 +236,11 @@ void Controller::flushPbuf() {
 /***** Show a prompt *****/
 void Controller::showPrompt() {
   if(verbose())
+#ifdef USE_MACROS
 	if (editMacro < NUM_MACROS)
 	  cmdstream->print("| ");
 	else
+#endif
 	  cmdstream->print("> ");
 }
 
