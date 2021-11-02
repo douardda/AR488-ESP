@@ -568,14 +568,20 @@ void Controller::displayMacros()
 void Controller::appendToMacro()
 {
   String macro;
-
   macro = pBuf;
   macro.trim();
 
   if (macro.length() > 0)
   {
 	macro = getMacro(editMacro) + macro + "\n";
-	saveMacro(editMacro, macro);
+	if (macro.length() >= MACRO_MAX_LEN) {
+	  if (config.isVerb)
+		cmdstream->println(F("Macro max length exceeded. Deleting."));
+	  deleteMacro(editMacro);
+	  editMacro = 255;
+	}
+	else
+	  saveMacro(editMacro, macro);
   }
   else
 	// blank line: end of macro edit mode
