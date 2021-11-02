@@ -1,15 +1,5 @@
 #if !defined(MACROS_H)
 
-
-/***************************************/
-/***** MACRO CONFIGURATION SECTION *****/
-/***** vvvvvvvvvvvvvvvvvvvvvvvvvvv *****/
-// SEE >>>>> Config.h <<<<<
-/***** ^^^^^^^^^^^^^^^^^^^^^^^^^^^ *****/
-/***** MACRO CONFIGURATION SECTION *****/
-/***************************************/
-
-
 /*************************************/
 /***** MACRO STRUCTRURES SECTION *****/
 /***** vvvvvvvvvvvvvvvvvvvvvvvvv *****/
@@ -18,55 +8,26 @@
 #include "AR488_Config.h"
 #include "controller.h"
 
+// make sure this fits in available EEPROM (with the general AR488Config structure)
+#ifndef NUM_MACROS
 #define NUM_MACROS 10
-
-#ifdef ESP32
-// use the Preferences lib (aka EEPROM) for macros on ESP32
-#include <Preferences.h>
-void execMacro(uint8_t, Controller& controller);
-void saveMacro(uint8_t, char*, Controller& controller);
-void deleteMacro(uint8_t, char*, Controller& controller);
-
-
-#else
-/***** STARTUP MACRO *****/
-const char startup_macro[] PROGMEM = {MACRO_0};
-
-/***** Consts holding USER MACROS 1 - 9 *****/
-const char macro_1 [] PROGMEM = {MACRO_1};
-const char macro_2 [] PROGMEM = {MACRO_2};
-const char macro_3 [] PROGMEM = {MACRO_3};
-const char macro_4 [] PROGMEM = {MACRO_4};
-const char macro_5 [] PROGMEM = {MACRO_5};
-const char macro_6 [] PROGMEM = {MACRO_6};
-const char macro_7 [] PROGMEM = {MACRO_7};
-const char macro_8 [] PROGMEM = {MACRO_8};
-const char macro_9 [] PROGMEM = {MACRO_9};
-
-
-/* Macro pointer array */
-const char * const macros[] PROGMEM = {
-  startup_macro,
-  macro_1,
-  macro_2,
-  macro_3,
-  macro_4,
-  macro_5,
-  macro_6,
-  macro_7,
-  macro_8,
-  macro_9
-};
-
-/*** ^^^^^^^^^^^^^ ***/
-/*** DO NOT MODIFY ***/
-
-void execMacro(uint8_t idx, Controller& controller);
-
 #endif
-/***** ^^^^^^^^^^^^^^^^^^^^ *****/
-/***** MACRO CONFIG SECTION *****/
-/********************************/
+#ifndef MACRO_MAX_LEN
+#define MACRO_MAX_LEN 32
+#endif
+
+String getMacro(uint8_t idx);
+void saveMacro(uint8_t, String&);
+void deleteMacro(uint8_t);
+void execMacro(uint8_t idx, Controller& controller);
+void execMacro(String& macro, Controller& controller);
+
+bool isMacro(uint8_t idx);
+
+#ifndef ESP32
+int addressForMacro(uint8_t macro);
+#endif
+
 #endif
 
 #define MACROS_H

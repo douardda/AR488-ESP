@@ -13,9 +13,6 @@
 #define UPCASE true
 
 
-//void epViewData();
-
-
 template<typename T> void epViewData(T* output) {
   uint16_t addr = 0;
   uint8_t dbuf[16];
@@ -38,11 +35,25 @@ template<typename T> void epViewData(T* output) {
   }
 }
 
+uint16_t getCRC16(uint8_t bytes[], uint16_t bsize);
 
-void epErase();
-void epWriteData(uint8_t cfgdata[], uint16_t cfgsize);
-bool epReadData(uint8_t cfgdata[], uint16_t cfgsize);
-bool isEepromClear();
+template< typename T > void epPut(int idx, T &t)
+{
+  uint16_t crc;
 
+  crc = getCRC16((uint8_t*) &t, sizeof(t));
+  EEPROM.put(idx+2, t);
+  EEPROM.put(idx, crc);
+}
+
+
+template< typename T > bool epGet(int idx, T &t)
+{
+  uint16_t crc;
+
+  EEPROM.get(idx, crc);
+  EEPROM.get(idx+2, t);
+  return (getCRC16((uint8_t*) &t, sizeof(t)) == crc);
+}
 
 #endif // AR488_EEPROM_H

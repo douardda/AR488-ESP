@@ -196,6 +196,7 @@
   #define DB_SW_SERIAL_RX 53
   #define DB_SW_SERIAL_TX 51
 #endif
+
 // Configure debug level
 //#define DEBUG1  // getCmd
 //#define DEBUG2  // setGpibControls
@@ -212,88 +213,6 @@
 /***** ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ *****/
 /***** AR488 GLOBAL CONFIGURATION HEADER *****/
 /*********************************************/
-
-
-/********************************/
-/***** AR488 MACROS SECTION *****/
-/***** vvvvvvvvvvvvvvvvvvvv *****/
-/*
- * (See the AR488 user manual for details)
- */
-#ifdef USE_MACROS
-
-/***** Startup Macro *****/
-
-#define MACRO_0 "\
-++addr 9\n\
-++auto 2\n\
-*RST\n\
-:func 'volt:ac'\
-"
-/* End of MACRO_0 (Startup macro)*/
-
-/***** User macros 1-9 *****/
-
-#define MACRO_1 "\
-++addr 3\n\
-++auto 0\n\
-M3\n\
-"
-/*<-End of macro*/
-
-#define MACRO_2 "\
-"
-/*<-End of macro 2*/
-
-#define MACRO_3 "\
-"
-/*<-End of macro 3*/
-
-#define MACRO_4 "\
-"
-/*<-End of macro 4*/
-
-#define MACRO_5 "\
-"
-/*<-End of macro 5*/
-
-#define MACRO_6 "\
-"
-/*<-End of macro 6*/
-
-#define MACRO_7 "\
-"
-/*<-End of macro 7*/
-
-#define MACRO_8 "\
-"
-/*<-End of macro 8*/
-
-#define MACRO_9 "\
-"
-/*<-End of macro 9*/
-
-
-#endif
-/***** ^^^^^^^^^^^^^^^^^^^^ *****/
-/***** AR488 MACROS SECTION *****/
-/********************************/
-
-
-/******************************************/
-/***** !!! DO NOT EDIT BELOW HERE !!! *****/
-/******vvvvvvvvvvvvvvvvvvvvvvvvvvvvvv******/
-
-
-/*********************************************/
-/***** MISCELLANEOUS DECLARATIONS *****/
-/******vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv******/
-
-/******^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^******/
-/***** MISCELLANEOUS DECLARATIONS *****/
-/*********************************************/
-
-
 
 
 

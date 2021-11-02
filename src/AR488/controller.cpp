@@ -233,6 +233,7 @@ void Controller::flushPbuf() {
   dataBufferFull = false;
 }
 
+
 /***** Show a prompt *****/
 void Controller::showPrompt() {
   if(verbose())
@@ -260,12 +261,6 @@ uint8_t Controller::serialIn_h() {
   // Parse serial input until we have detected a line terminator
   while (cmdstream->available() && bufferStatus==0) {   // Parse while characters available and line is not complete
 	bufferStatus = parseInput(cmdstream->read());
-	/*
-	  serialstream.print(F("BufferStatus: "));
-	  serialstream.println(bufferStatus);
-	  serialstream.print(F("pbPtr: "));
-	  serialstream.println(pbPtr);
-	*/
   }
 
 #ifdef DEBUG1
@@ -304,16 +299,19 @@ void Controller::reset() {
 #endif
 }
 
-void Controller::initConfig()
-{
-  /***** Initialise the interface *****/
+void Controller::resetConfig() {
   // Set default values ({'\0'} sets version string array to null)
   config = {false, false, 2, 0, 1, 0, 0, 0, 0, 1200, 0, {'\0'}, 0, 0, {'\0'}, 0, 0, false,
 #ifdef AR488_WIFI_EN
 			{'\0'}, {'\0'}
 #endif
   };
+}
 
+void Controller::initConfig()
+{
+  /***** Initialise the interface *****/
+  resetConfig();
 #ifdef ESP32
   Preferences pref;
   pref.begin("ar488", true);
@@ -353,13 +351,8 @@ void Controller::initConfig()
   // Read data from non-volatile memory
   //(will only read if previous config has already been saved)
   //  epGetCfg();
-  if (!isEepromClear()) {
-	uint8_t *conf = (uint8_t*) &config;
-	if (!epReadData(conf, sizeof(config))) {
-      // CRC check failed - config data does not match EEPROM
-      epErase();
-      epWriteData(conf, sizeof(config));
-    }
+  if (!epGet(0, config)) {
+	resetConfig();
   }
 #endif
 
@@ -414,8 +407,7 @@ void Controller::saveConfig()
   if (config.isVerb) cmdstream->println(F("Settings saved."));
 
 #elif defined(E2END)
-  uint8_t *conf = (uint8_t*) &(config);
-  epWriteData(conf, sizeof(config));
+  epPut(0, config);
   if (config.isVerb) cmdstream->println(F("Settings saved."));
 
 #else
@@ -561,70 +553,35 @@ void Controller::scanWifi()
 #if defined (USE_MACROS)
 void Controller::displayMacros()
 {
-#if defined(ESP32)
-  Preferences pref;
-  char key[] = {'\x00', '\x00'};
   String macro;
-  pref.begin("macros", true);
-  for(int i=0; i<NUM_MACROS; i++)
-  {
-	key[0] = i + 48;  // 48 = ord('0')
-	if (pref.isKey(key))
-	{
-	  macro = pref.getString(key);
-	  cmdstream->print("Macro ");
-	  cmdstream->print(i);
-	  cmdstream->println(":");
+
+  for(int i=0; i<NUM_MACROS; i++) {
+	macro = getMacro(i);
+	if (macro.length() > 0) {
+	  cmdstream->println(String("Macro ") + i + ":");
 	  cmdstream->println(macro);
 	}
   }
-  pref.end();
-#else
-  for (int i = 0; i < 10; i++) {
-	macro = (char*)pgm_read_word(macros + i);
-	//      controller.cmdstream->print(i);controller.cmdstream->print(F(": "));
-	if (strlen_P(macro) > 0) {
-	  controller.cmdstream->print(i);
-	  controller.cmdstream->print(" ");
-      }
-  }
-  controller.cmdstream->println();
-#endif
+  cmdstream->println();
 }
 
 void Controller::appendToMacro()
 {
-  Preferences pref;
   String macro;
-  const char key[] = {48 + editMacro, '\x00'};
 
   macro = pBuf;
   macro.trim();
 
   if (macro.length() > 0)
   {
-	pref.begin("macros", false);
-	macro += "\n";
-	if (pref.isKey(key))
-	  macro = pref.getString(key) + macro;
-	pref.putString(key, macro);
-	pref.end();
+	macro = getMacro(editMacro) + macro + "\n";
+	saveMacro(editMacro, macro);
   }
   else
 	// blank line: end of macro edit mode
 	editMacro = 255;
   flushPbuf();
   showPrompt();
-}
-
-void Controller::deleteMacro(uint8_t macro)
-{
-  const char key[] = {48 + editMacro, '\x00'};
-  Preferences pref;
-  pref.begin("macros", false);
-  if (pref.isKey(key))
-	pref.remove(key);
-  pref.end();
 }
 
 #endif

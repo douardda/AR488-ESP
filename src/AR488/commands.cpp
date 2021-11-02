@@ -1008,7 +1008,7 @@ void macro_h(char *params, Controller& controller) {
 		controller.editMacro = (uint8_t)val;
 	  }
 	  else if (strncmp(keyword, "del", 3)==0) {
-		controller.deleteMacro((uint8_t)val);
+		deleteMacro((uint8_t)val);
 	  }
 	  else
 		// invalid sub command

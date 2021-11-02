@@ -55,6 +55,7 @@ public:
   uint8_t serialIn_h();
   void reset();
   void initConfig();
+  void resetConfig();
   void saveConfig();
   bool verbose() {return config.isVerb;};
   void sendToInstrument();
@@ -68,7 +69,6 @@ public:
 #if defined (USE_MACROS)
   void displayMacros();
   void appendToMacro();
-  void deleteMacro(uint8_t);
 #endif
 public:
   AR488Conf config;
