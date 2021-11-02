@@ -1,19 +1,22 @@
 #if !defined(MACROS_H)
 
-/*************************************/
-/***** MACRO STRUCTRURES SECTION *****/
-/***** vvvvvvvvvvvvvvvvvvvvvvvvv *****/
 #ifdef USE_MACROS
 #include <Arduino.h>
 #include "AR488_Config.h"
 #include "controller.h"
 
-// make sure this fits in available EEPROM (with the general AR488Config structure)
+// make sure
+//   NUM_MACROS x (2+MACRO_MAX_LEN) + (2+sizeof(AR488Conf))
+// fits in available EEPROM
 #ifndef NUM_MACROS
 #define NUM_MACROS 10
 #endif
 #ifndef MACRO_MAX_LEN
+#ifdef ESP32
+#define MACRO_MAX_LEN 128
+#else
 #define MACRO_MAX_LEN 32
+#endif
 #endif
 
 String getMacro(uint8_t idx);
