@@ -1254,12 +1254,12 @@ void wifi_h(char *params, Controller& controller) {
     dlen = strlen(datastr);
     if (dlen) {
       if (strncmp(keyword, "ssid", 6)==0) {
-        if (dlen>0 && dlen<64) {
-          memset(controller.config.ssid, '\0', 64);
+        if (dlen>0 && dlen<32) {
+          memset(controller.config.ssid, '\0', 32);
           strncpy(controller.config.ssid, datastr, dlen);
         } else {
           if (controller.config.isVerb)
-			controller.cmdstream->println(F("Length of ssid string must not exceed 63 characters!"));
+			controller.cmdstream->println(F("Length of ssid string must not exceed 31 characters!"));
           errBadCmd(controller);
         }
         return;

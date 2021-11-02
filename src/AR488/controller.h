@@ -38,8 +38,8 @@ typedef struct {
   uint8_t idn;      // Send ID in response to *idn? 0=disable, 1=send name; 2=send name+serial
   bool isVerb;      // Verbose mode
 #ifdef AR488_WIFI_EN
-  char ssid[64];
-  char passkey[64];
+  char ssid[32];    // max size for WiFiMulti.addAp is 31
+  char passkey[64]; // same
 #endif
 } AR488Conf;
 
