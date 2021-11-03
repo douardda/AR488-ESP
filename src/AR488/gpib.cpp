@@ -545,12 +545,14 @@ bool GPIB::gpibWriteByteHandshake(uint8_t db) {
 
     // Wait for NDAC to go LOW (indicating that devices are at attention)
   if (Wait_on_pin_state(LOW, NDAC, config.rtmo)) {
-    if (verbose()) controller.cmdstream->println(F("gpibWriteByte: timeout waiting for receiver attention [NDAC asserted]"));
+    if (verbose()) controller.cmdstream->println(
+	  F("gpibWriteByte: timeout waiting for receiver attention [NDAC asserted]"));
     return true;
   }
   // Wait for NRFD to go HIGH (indicating that receiver is ready)
   if (Wait_on_pin_state(HIGH, NRFD, config.rtmo))  {
-    if (verbose()) controller.cmdstream->println(F("gpibWriteByte: timeout waiting for receiver ready - [NRFD unasserted]"));
+    if (verbose()) controller.cmdstream->println(
+	  F("gpibWriteByte: timeout waiting for receiver ready - [NRFD unasserted]"));
     return true;
   }
 
@@ -562,13 +564,15 @@ bool GPIB::gpibWriteByteHandshake(uint8_t db) {
 
   // Wait for NRFD to go LOW (receiver accepting data)
   if (Wait_on_pin_state(LOW, NRFD, config.rtmo))  {
-    if (verbose()) controller.cmdstream->println(F("gpibWriteByte: timeout waiting for data to be accepted - [NRFD asserted]"));
+    if (verbose()) controller.cmdstream->println(
+	  F("gpibWriteByte: timeout waiting for data to be accepted - [NRFD asserted]"));
     return true;
   }
 
   // Wait for NDAC to go HIGH (data accepted)
   if (Wait_on_pin_state(HIGH, NDAC, config.rtmo))  {
-    if (verbose()) controller.cmdstream->println(F("gpibWriteByte: timeout waiting for data accepted signal - [NDAC unasserted]"));
+    if (verbose()) controller.cmdstream->println(
+	  F("gpibWriteByte: timeout waiting for data accepted signal - [NDAC unasserted]"));
     return true;
   }
 

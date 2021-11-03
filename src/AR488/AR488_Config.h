@@ -43,6 +43,7 @@
   //#define AR_SERIAL_PORT Serial3
   //#define AR_CDC_SERIAL
   //#define AR_SW_SERIAL
+  #define AR_BT_SERIAL_PORT Serial
 #endif
 
 /*** UNO and NANO boards ***/
@@ -57,6 +58,7 @@
   #define AR_HW_SERIAL
   #ifdef AR_HW_SERIAL
     #define AR_SERIAL_PORT Serial
+    #define AR_BT_SERIAL_PORT Serial
   #else
     // Select software serial port
     #define AR_SW_SERIAL
@@ -74,10 +76,12 @@
   #ifdef AR_CDC_SERIAL
     // The Mega 32u4 default port is a virtual USB CDC port named 'Serial'
     #define AR_SERIAL_PORT Serial
+    #define AR_BT_SERIAL_PORT Serial
   #else
     // Use hardware port Serial1
     #define AR_HW_SERIAL
     #define AR_SERIAL_PORT Serial1
+    #define AR_BT_SERIAL_PORT Serial1
   #endif
 
 /*** MEGA 2560 board ***/
@@ -100,6 +104,7 @@
   #define AR_SERIAL_PORT Serial
   //#define AR_SERIAL_PORT Serial1
   //#define AR_SERIAL_PORT Serial3
+  #define AR_BT_SERIAL_PORT Serial
 #endif
 
 #endif  // Board/layout selection
@@ -150,11 +155,9 @@
  * i.e, ++macro n, where n is the number of the macro
  *
  * USE_MACROS must be enabled to enable the macro feature including
- * MACRO_0 (the startup macro). RUN_STARTUP must be uncommented to
- * run the startup macro when the interface boots up
+ * macro_0 (the startup macro).
  */
 //#define USE_MACROS    // Enable the macro feature
-//#define RUN_STARTUP   // Run MACRO_0 (the startup macro)
 
 
 /***** Enable SN7516x chips *****/
@@ -175,8 +178,8 @@
 /*
  * Uses built-in LED on GPIO pin 13 to signal status
  */
-//#define AR_BT_EN 12             // Bluetooth enable and control pin
-#ifdef AR_BT_EN
+//#define AR_HC05_EN 12      // HC05 Bluetooth module enable and control pin
+#ifdef AR488_BT_ENABLE
   #define AR_BT_BAUD 115200     // Bluetooth module preferred baud rate
   #define AR_BT_NAME "AR488-BT" // Bluetooth device name
   #define AR_BT_CODE "488488"   // Bluetooth pairing code
@@ -213,7 +216,5 @@
 /***** ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ *****/
 /***** AR488 GLOBAL CONFIGURATION HEADER *****/
 /*********************************************/
-
-
 
 #endif // AR488_CONFIG_H

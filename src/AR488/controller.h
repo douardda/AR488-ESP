@@ -4,15 +4,16 @@
 #include <Arduino.h>
 #include "AR488.h"
 //#include "gpib.h"
+#include <Vector.h>
 
-#ifdef AR488_WIFI_EN
+#ifdef AR488_WIFI_ENABLE
 #include <WiFi.h>
 #include <WiFiMulti.h>
 #endif
 
 class GPIB;
 
-#define PBSIZE 128
+#define PBSIZE 256
 
 /***** Controller configuration *****/
 /*
@@ -37,7 +38,7 @@ typedef struct {
   uint32_t serial;  // Serial number
   uint8_t idn;      // Send ID in response to *idn? 0=disable, 1=send name; 2=send name+serial
   bool isVerb;      // Verbose mode
-#ifdef AR488_WIFI_EN
+#ifdef AR488_WIFI_ENABLE
   char ssid[32];    // max size for WiFiMulti.addAp is 31
   char passkey[64]; // same
 #endif
@@ -45,7 +46,7 @@ typedef struct {
 
 class Controller {
 public:
-  Controller(Stream&);
+  Controller();
   uint8_t parseInput(char c);
   bool isCmd(char *buffr);
   bool isIdnQuery(char *buffr);
@@ -61,7 +62,7 @@ public:
   void sendToInstrument();
   void setGPIB(GPIB *gpib) {this->gpib = gpib;};
   void execCmd();
-#ifdef AR488_WIFI_EN
+#ifdef AR488_WIFI_ENABLE
   void setupWifi();
   void connectWifi();
   void scanWifi();
@@ -70,14 +71,18 @@ public:
   void displayMacros();
   void appendToMacro();
 #endif
+  void selectStream();
+
 public:
   AR488Conf config;
-  Stream &serialstream;
+  Stream *serialstream;
+  Stream *btstream;
+  Stream *tcpstream;
   Stream *cmdstream;
   GPIB *gpib = NULL;
 
 private:
-#ifdef AR488_WIFI_EN
+#ifdef AR488_WIFI_ENABLE
   WiFiMulti wifimulti;
   WiFiServer wifiserver;
   WiFiClient serverclient;

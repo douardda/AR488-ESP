@@ -52,7 +52,7 @@ static cmdRec cmdHidx [] = {
   { "ver",         3, ver_h       },
   { "verbose",     3, verb_h      },
   { "tmbus",       3, tmbus_h     },
-#ifdef AR488_WIFI_EN
+#ifdef AR488_WIFI_ENABLE
   { "wifi",        3, wifi_h      },
 #endif
   { "xdiag",       3, xdiag_h     }
@@ -287,18 +287,36 @@ void amode_h(char *params, Controller& controller) {
   uint16_t val;
   if (params != NULL) {
     if (notInRange(params, 0, 3, val, controller)) return;
-    if (val > 0 && controller.config.isVerb) {
-      controller.cmdstream->println(F("WARNING: automode ON can cause some devices to generate"));
-      controller.cmdstream->println(F("         'addressed to talk but nothing to say' errors"));
-    }
     controller.config.amode = (uint8_t)val;
     if (controller.config.amode < 3) controller.aRead = false;
     if (controller.config.isVerb) {
-      controller.cmdstream->print(F("Auto mode: "));
-      controller.cmdstream->println(controller.config.amode);
-    }
+	  amode_h(NULL, controller);
+	  if (val > 0) {
+		controller.cmdstream->println(F("WARNING: automode ON can cause some devices to generate"));
+		controller.cmdstream->println(F("         'addressed to talk but nothing to say' errors"));
+	  }
+	}
   } else {
-    controller.cmdstream->println(controller.config.amode);
+    if (controller.config.isVerb) {
+	  controller.cmdstream->print(String("Auto mode: ") + controller.config.amode + " (");
+	  switch (controller.config.amode) {
+		case 0:
+		  controller.cmdstream->print(F("off"));
+		  break;
+		case 1:
+		  controller.cmdstream->print(F("prologix mode"));
+		  break;
+		case 2:
+		  controller.cmdstream->print(F("on query"));
+		  break;
+		case 3:
+		  controller.cmdstream->print(F("continuous"));
+		  break;
+	  }
+	  controller.cmdstream->println(F(")"));
+	}
+	else
+	  controller.cmdstream->println(controller.config.amode);
   }
 }
 
@@ -1234,7 +1252,7 @@ void errBadCmd(Controller& controller) {
 }
 
 
-#ifdef AR488_WIFI_EN
+#ifdef AR488_WIFI_ENABLE
 /***** Configure Wifi connection *****/
 /*
  * Sets the wifi parameterw:

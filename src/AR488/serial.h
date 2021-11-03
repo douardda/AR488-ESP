@@ -2,13 +2,14 @@
 
 #include <Arduino.h>
 
-Stream& getSerial();
-
-#if defined(DB_SERIAL_PORT)
-Stream& getDbSerial();
+Stream* getSerialStream();
+#ifdef AR488_BT_ENABLE
+Stream* getBTSerialStream();
 #endif
 
-void initSerial();
+#if defined(DB_SERIAL_PORT)
+Stream* getDbSerialStream();
+#endif
 
 #define SERIAL_H
 #endif

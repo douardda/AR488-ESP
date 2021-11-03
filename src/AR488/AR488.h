@@ -5,10 +5,10 @@
 #include "AR488_Config.h"
 #include "AR488_Layouts.h"
 
-#if defined(AR488_WIFI_EN)
+#if defined(AR488_WIFI_ENABLE)
 #if !defined(ESP32)
 #warning Wifi is only supported on ESP32 platform
-#undef AR488_WIFI_EN
+#undef AR488_WIFI_ENABLE
 #endif
 #endif
 

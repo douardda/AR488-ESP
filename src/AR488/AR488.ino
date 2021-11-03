@@ -14,8 +14,9 @@
 #include "gpib.h"
 #include "macros.h"
 
-#ifdef AR_BT_EN
-  #include "AR488_BT.h"
+#ifdef ESP32
+#include "soc/soc.h"
+#include "soc/rtc_cntl_reg.h"
 #endif
 
 /***** FWVER "AR488 GPIB controller, ver. 0.49.14, 02/03/2021" *****/
@@ -61,17 +62,25 @@
 
 
 /****** Global variables with volatile values related to controller state *****/
-Controller controller(getSerial());
-GPIB gpib(controller);
+Controller *controller=NULL;
+GPIB *gpib=NULL;
 
 
 /******  Arduino standard SETUP procedure *****/
 void setup() {
-
+#ifdef ESP32
+  // Disable the brownout detector...
+	WRITE_PERI_REG(RTC_CNTL_BROWN_OUT_REG, 0);
+#endif
   // Disable the watchdog (needed to prevent WDT reset loop)
 #ifdef __AVR__
   wdt_disable();
 #endif
+
+	controller = new Controller();
+	gpib = new GPIB(*controller);
+
+	controller->serialstream->println("Setup");
 
   // Turn off internal LED (set OUPTUT/LOW)
 #ifdef LED_BUILTIN
@@ -80,20 +89,21 @@ void setup() {
 #endif
 
   // Initialise parse buffer
-  controller.flushPbuf();
-	initSerial();
+  controller->flushPbuf();
   // Initialise
-  controller.initConfig();
-
+	controller->serialstream->println("Config init...");
+  controller->initConfig();
+	controller->serialstream->println("Config init done");
 #if defined(USE_MACROS) && defined(RUN_STARTUP)
   // Run startup macro
   execMacro(0, controller);
 #endif
 
-	if (controller.verbose()) {
-		controller.cmdstream->println(F("AR488 ready."));
-		controller.showPrompt();
+	if (controller->verbose()) {
+		controller->cmdstream->println(F("AR488 ready."));
+		controller->showPrompt();
 	}
+	controller->serialstream->println("Setup done");
 }
 /****** End of Arduino standard SETUP procedure *****/
 
@@ -107,9 +117,9 @@ void loop() {
  */
 #ifdef USE_MACROS
   // Run user macro if flagged
-  if (controller.runMacro > 0) {
-			execMacro(controller.runMacro, controller);
-    controller.runMacro = 0;
+  if (controller->runMacro > 0) {
+			execMacro(controller->runMacro, *controller);
+    controller->runMacro = 0;
   }
 #endif
 
@@ -120,8 +130,8 @@ void loop() {
  * been signalled
  */
 #ifndef USE_INTERRUPTS
-  gpib.setATN(digitalRead(ATN)==LOW ? true : false);
-  gpib.setSRQ(digitalRead(SRQ)==LOW ? true : false);
+  gpib->setATN(digitalRead(ATN)==LOW ? true : false);
+  gpib->setSRQ(digitalRead(SRQ)==LOW ? true : false);
 #endif
 
 /*** Process the buffer ***/
@@ -138,58 +148,56 @@ void loop() {
  */
 
   // lnRdy=1: received a command so execute it...
-  if (controller.lnRdy == 1) {
-    controller.execCmd();
+  if (controller->lnRdy == 1) {
+    controller->execCmd();
   }
 #if defined(USE_MACROS)
-  else if (controller.lnRdy == 4) {
-    controller.appendToMacro();
+  else if (controller->lnRdy == 4) {
+    controller->appendToMacro();
   }
 #endif
 
   // Controller mode:
-  if (controller.config.cmode == 2) {
+  if (controller->config.cmode == 2) {
     // lnRdy=2: received data - send it to the instrument...
-    if (controller.lnRdy == 2) {
-      controller.sendToInstrument();
+    if (controller->lnRdy == 2) {
+      controller->sendToInstrument();
 			// Auto-read data from GPIB bus following any command
-      if (controller.config.amode == 1) {
-        //        delay(10);
-        gpib.gpibReceiveData();
+      if (controller->config.amode == 1) {
+        gpib->gpibReceiveData();
       }
       // Auto-receive data from GPIB bus following a query command
-      if (controller.config.amode == 2 && gpib.isQuery) {
-        //        delay(10);
-        gpib.gpibReceiveData();
-        gpib.isQuery = false;
+      if (controller->config.amode == 2 && gpib->isQuery) {
+        gpib->gpibReceiveData();
+        gpib->isQuery = false;
       }
-			controller.showPrompt();
+			controller->showPrompt();
     }
 
     // Check status of SRQ and SPOLL if asserted
-    if (gpib.isSRQ() && controller.isSrqa) {
-			spoll_h(NULL, controller);
-      gpib.clearSRQ();
+    if (gpib->isSRQ() && controller->isSrqa) {
+			spoll_h(NULL, *controller);
+      gpib->clearSRQ();
     }
 
     // Continuous auto-receive data from GPIB bus
-    if (controller.config.amode == 3 && controller.aRead) gpib.gpibReceiveData();
+    if (controller->config.amode == 3 && controller->aRead) gpib->gpibReceiveData();
   }
 
   // Device mode:
-  if (controller.config.cmode == 1) {
-    if (controller.isTO) {
-			if (controller.lnRdy == 2) {
-				controller.sendToInstrument();
-				controller.showPrompt();
+  else if (controller->config.cmode == 1) {
+    if (controller->isTO) {
+			if (controller->lnRdy == 2) {
+				controller->sendToInstrument();
+				controller->showPrompt();
 			}
-    }else if (controller.isRO) {
-      gpib.lonMode();
+    }else if (controller->isRO) {
+      gpib->lonMode();
     }else{
-			if (gpib.isATN()) gpib.attnRequired();
-      if (controller.lnRdy == 2) {
-				controller.sendToInstrument();
-				controller.showPrompt();
+			if (gpib->isATN()) gpib->attnRequired();
+      if (controller->lnRdy == 2) {
+				controller->sendToInstrument();
+				controller->showPrompt();
 			}
     }
   }
@@ -198,23 +206,20 @@ void loop() {
 //  lnRdy = 0;
 
   // IDN query ?
-  if (controller.sendIdn) {
-    if (controller.config.idn==1) controller.cmdstream->println(controller.config.sname);
-    if (controller.config.idn==2) {
-				controller.cmdstream->print(controller.config.sname);
-				controller.cmdstream->print("-");
-				controller.cmdstream->println(controller.config.serial);
+  if (controller->sendIdn) {
+    if (controller->config.idn==1) controller->cmdstream->println(controller->config.sname);
+    if (controller->config.idn==2) {
+				controller->cmdstream->print(controller->config.sname);
+				controller->cmdstream->print("-");
+				controller->cmdstream->println(controller->config.serial);
 		}
-    controller.sendIdn = false;
+    controller->sendIdn = false;
   }
 
-#ifdef AR488_WIFI_EN
-	// check for new tcp cnx
-	controller.connectWifi();
-#endif
-
+	// look for incoming data on a stream, and make it the current IO stream
+	controller->selectStream();
   // Check serial buffer
-  controller.serialIn_h();
+  controller->serialIn_h();
 
   delayMicroseconds(5);
 }

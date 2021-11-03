@@ -1,60 +1,73 @@
 #include <Arduino.h>
 #include "AR488_Config.h"
 
-#ifdef AR_BT_EN
-#include "AR488_BT.h"
+#ifdef AR488_BT_ENABLE
+
+#ifdef AR488_BT_HC05
+#include "AR488_HC05.h"
 #endif
 
-/**********************************/
-/***** SERIAL PORT MANAGEMENT *****/
-/***** vvvvvvvvvvvvvvvvvvvvvv *****/
-
-
-#ifdef AR_CDC_SERIAL
-Serial_ *arSerial_ = &(AR_SERIAL_PORT);
-#endif
-
-#ifdef AR_HW_SERIAL
-HardwareSerial *arSerial_ = &(AR_SERIAL_PORT);
-#endif
-
-// Note: SoftwareSerial support conflicts with PCINT support
-#ifdef AR_SW_SERIAL
-#include <SoftwareSerial.h>
-SoftwareSerial swArSerial(AR_SW_SERIAL_RX, AR_SW_SERIAL_TX);
-SoftwareSerial *arSerial_ = &swArSerial;
-#endif
-
-
-/***** BT SERIAL PORT DECLARATIONS *****/
-
-#ifdef AR_BT_EN
-#if defined(ESP32)
+#ifdef ESP32
 #include "BluetoothSerial.h"
-BluetoothSerial btSerial_;
-BluetoothSerial *btSerial = &btSerial_;
+#endif
 
-#elif defined(AR_CDC_SERIAL)
-Serial_ *btSerial = &(AR_SERIAL_PORT);
+#endif
 
+/********** BT SERIAL PORT DECLARATIONS **********/
+/* on ESP32, this comes as an extra serial port  */
+/* on Arduino, this is done using an HC05 like   */
+/* module plugged on the a serial port (possibly */
+/* the main one).                                 */
+
+Stream *arSerial = NULL;
+
+Stream* getSerialStream() {
+  if (arSerial == NULL) {
+#if defined(AR_CDC_SERIAL)
+	Serial_ *serial = &(AR_SERIAL_PORT);
 #elif defined(AR_HW_SERIAL)
-HardwareSerial *btSerial = &(AR_SERIAL_PORT);
-
+	HardwareSerial *serial = &(AR_SERIAL_PORT);
 #elif defined(AR_SW_SERIAL)
 // Note: SoftwareSerial support conflicts with PCINT support
 #include <SoftwareSerial.h>
-SoftwareSerial btSerial(AR_SW_SERIAL_RX, AR_SW_SERIAL_TX);
-SoftwareSerial *btSerial = &btSerial;
-
+	SoftwareSerial *serial = new SoftwareSerial(AR_SW_SERIAL_RX, AR_SW_SERIAL_TX);
 #endif
-Stream *arSerial = (Stream*) btSerial;
-#else
-Stream *arSerial = (Stream*) arSerial_;
-#endif
-
-Stream& getSerial() {
-	return *arSerial;
+	serial->begin(AR_SERIAL_BAUD);
+	arSerial = (Stream*) serial;
+  }
+  return arSerial;
 }
+
+#ifdef AR488_BT_ENABLE
+Stream *btSerial = NULL;
+
+Stream* getBTSerialStream() {
+  if(btSerial == NULL) {
+#if defined(ESP32)
+	BluetoothSerial *serial = new BluetoothSerial();
+	serial->begin(AR_BT_NAME);
+#else
+#if defined(AR_CDC_SERIAL)
+	Serial_ *serial = &(AR_BT_SERIAL_PORT);
+#elif defined(AR_HW_SERIAL)
+	HardwareSerial *serial = &(AR_BT_SERIAL_PORT);
+#elif defined(AR_SW_SERIAL)
+// Note: SoftwareSerial support conflicts with PCINT support
+#include <SoftwareSerial.h>
+	SoftwareSerial *serial = new SoftwareSerial(AR_SW_BT_SERIAL_RX, AR_SW_BT_SERIAL_TX);
+#endif
+	serial->begin(AR_BT_BAUD);
+#if defined(AR488_BT_HC05)
+	hc05Init((Stream*) serial);
+#endif
+
+#endif // !ESP32
+	btSerial = (Stream*) serial;
+  }
+  return btSerial;
+}
+
+#endif
 
 /***** Debug Port - if DB_SERIAL_PORT is set *****/
 
@@ -78,25 +91,3 @@ Stream& getDbSerial() {
 	return *dbSerial;
 }
 #endif
-
-
-void initSerial() {
-// Initialise debug port
-#ifdef DB_SERIAL_PORT
-  if (dbSerial_ != arSerial_) dbSerial_->begin(DB_SERIAL_BAUD);
-#endif
-
- // Initialise serial comms over USB or Bluetooth
-#ifdef AR_BT_EN
-  // Initialise Bluetooth
-  btInit();
-#else
-  // Start the serial port
-  #ifdef AR_SW_SERIAL
-    arSerial_->begin(AR_SW_SERIAL_BAUD);
-  #else
-    arSerial_->begin(AR_SERIAL_BAUD);
-  #endif
-#endif
-	//arSerial->println(F("AR488 starting."));
-}
