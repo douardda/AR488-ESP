@@ -33,6 +33,7 @@ void read_h(char *params, Controller&);
 void clr_h(char *params, Controller&);
 void llo_h(char *params, Controller&);
 void loc_h(char *params, Controller&);
+void help_h(char *params, Controller&);
 void ifc_h(char *params, Controller&);
 void trg_h(char *params, Controller&);
 void rst_h(char *params, Controller&);

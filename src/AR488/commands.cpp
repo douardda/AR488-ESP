@@ -24,6 +24,7 @@ static cmdRec cmdHidx [] = {
   { "eos",         3, eos_h       },
   { "eot_char",    3, eot_char_h  },
   { "eot_enable",  3, eot_en_h    },
+  { "help",        3, help_h      },
   { "ifc",         2, ifc_h       },
   { "llo",         2, llo_h       },
   { "loc",         2, loc_h       },
@@ -1316,3 +1317,97 @@ void wifi_h(char *params, Controller& controller) {
   errBadCmd(controller);
 }
 #endif
+
+static const char cmdHelp[] PROGMEM = {
+  "== Prologix compatible command set ==\n"
+  "addr: Display/set device address\n"
+  "auto: Automatically request talk and read response\n"
+  "clr: Send Selected Device Clear to current GPIB address\n"
+  "eoi: Enable/disable assertion of EOI signal\n"
+  "eor: Show or set end of receive character(s)\n"
+  "eos: Specify GPIB termination character\n"
+  "eot_char: Set character to append to USB output when EOT enabled\n"
+  "eot_enable: Enable/Disable appending user specified character to USB output on EOI detection\n"
+  "help: This message\n"
+  "ifc: Assert IFC signal for 150 miscoseconds - make AR488 controller in charge\n"
+  "llo: Local lockout - disable front panel operation on instrument\n"
+  "loc: Enable front panel operation on instrument\n"
+  "lon: Put controller in listen-only mode (listen to all traffic)\n"
+  "mode: Set the interface mode (0=controller/1=device)\n"
+  "read: Read data from instrument\n"
+  "read_tmo_ms: Read timeout specified between 1 - 3000 milliseconds\n"
+  "rst: Reset the controller\n"
+  "savecfg: Save configration\n"
+  "spoll: Serial poll the addressed host or all instruments\n"
+  "srq: Return status of srq signal (1-srq asserted/0-srq not asserted)\n"
+  "status: Set the status byte to be returned on being polled (bit 6 = RQS, i.e SRQ asserted)\n"
+  "trg: Send trigger to selected devices (up to 15 addresses)\n"
+  "ver: Display firmware version\n"
+  // additional commands
+  "== Extension command set ==\n"
+  "aspoll: Serial poll all instruments (alias: ++spoll all)\n"
+  "dcl: Send unaddressed (all) device clear  [power on reset] (is the rst?)\n"
+  "default: Set configuration to controller default settings\n"
+  "id name: Show/Set the name of the interface\n"
+  "id serial: Show/Set the serial number of the interface\n"
+  "id verstr: Show/Set the version string (replaces setvstr)\n"
+  "idn: Enable/Disable reply to *idn? (disabled by default)\n"
+#ifdef USE_MACROS
+  "macro: List defined macros\n"
+  "macro <n>: Execute macro number <n>\n"
+  "macro <n> set: Edit macro number <n>\n"
+  "macro <n> del: Delete macro number <n>\n"
+#endif
+  "ppoll: Conduct a parallel poll\n"
+  "ren: Assert or Unassert the REN signal\n"
+  "repeat: Repeat a given command and return result\n"
+  "setvstr: Set custom version string (to identify controller, e.g. \"GPIB-USB\"). Max 47 chars, excess truncated.\n"
+  "srqauto: Automatically conduct serial poll when SRQ is asserted\n"
+  "ton: Put controller in talk-only mode (send data only)\n"
+  "tmbus: Timing parameters (see the doc)\n"
+  "verbose: Verbose (human readable) mode\n"
+#ifdef AR488_WIFI_ENABLE
+  "wifi ssid: Set or get the wifi SSID (31 chars max)\n"
+  "wifi passkey: Set or get the wifi passphrase (63 chars max)\n"
+  "wifi connect: Connect to the configure wifi AP\n"
+  "wifi scan: Scan for accessible AP\n"
+#endif
+  "xdiag: Bus diagnostics (see the doc)\n"
+};
+
+/***** Show help message *****/
+void help_h(char *params, Controller& controller) {
+  char c;
+  char token[20];
+  int i;
+
+  i = 0;
+  for (int k = 0; k < strlen_P(cmdHelp); k++) {
+    c = pgm_read_byte_near(cmdHelp + k);
+	if ((params == NULL) && (i==0) && (c == '='))
+	  // a "title" line, print it (if no params)
+	  i = 255;
+
+    if (i < 20) {
+      if(c == ':') {
+        token[i] = 0;
+        if((params == NULL) || (strcmp(token, params) == 0)) {
+          controller.cmdstream->print(F("++"));
+          controller.cmdstream->print(token);
+          controller.cmdstream->print(c);
+          controller.cmdstream->print('\t');
+          i = 255; // means we need to print until \n
+        }
+      } else {
+        token[i] = c;
+        i++;
+      }
+    }
+    else if (i == 255) {
+      controller.cmdstream->print(c);
+    }
+    if (c == '\n') {
+      i = 0;
+    }
+  }
+}
