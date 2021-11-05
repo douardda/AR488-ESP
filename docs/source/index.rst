@@ -7,17 +7,19 @@ AR488 GPIB Controller
 =====================
 
 The AR488 GPIB controller is an Arduino-based controller for interfacing with `IEEE488
-GPIB <https://en.wikipedia.org/wiki/IEEE-488>`_ devices. The code has been tested on
-`Arduino <https://arduino.cc>`_ `Uno
-<https://store.arduino.cc/products/arduino-uno-rev3/>`_, `Nano
-<https://store.arduino.cc/products/arduino-nano>`_, `Mega 2560
-<https://store.arduino.cc/products/arduino-mega-2560-rev3>`_ and `Micro 32U4
-<https://store.arduino.cc/products/arduino-micro>`_ boards and provides a low cost
-alternative to other commercial interfaces.
+GPIB <https://en.wikipedia.org/wiki/IEEE-488>`_ devices.
 
-To build an interface, at least one of the aforementioned Arduino boards will be
-required to act as the interface hardware. Connecting to an instrument will require a 16
-core cable and a suitable `IEEE488 connector
+The code support AVR based arduino boards and has been tested on Arduino_ Uno_, Nano_,
+`Mega 2560`_, `Micro 32U4`_ boards and provides a low cost alternative to other
+commercial interfaces.
+
+It also support ESP32_ boards and has been tested on several `ESP32 and ESP32S2
+devkits`_. These boards come with support for wifi connection and serial over Bluetooth
+(not supported on ESP32S2.)
+
+To build an interface, at least one of the aforementioned Arduino of ESP32 boards will
+be required to act as the interface hardware. Connecting to an instrument will require a
+16 core cable and a suitable `IEEE488 connector
 <https://en.wikipedia.org/wiki/IEEE-488#Connectors>`_. This can be salvaged from an old
 GPIB cable or purchased from electronics parts suppliers. Alternatively, a PCB board can
 be designed to incorporate a directly mounted IEEE488 connector.
@@ -26,13 +28,26 @@ The interface firmware can optionally support the `SN75160
 <https://www.ti.com/product/SN75160B>`_ and `SN75161
 <https://www.ti.com/product/SN75161B>`_ GPIB transceiver integrated circuits. Details of
 construction and the mapping of Arduino pins to GPIB control signals and the data bus
-are explained in the Building an AR488 GPIB Interface section.
+are explained in the :ref:`Building an AR488 GPIB Interface` section.
 
-The interface firmware supports standard Prologix commands (with the exception of
-``++help``) and adheres closely to the Prologix syntax but there are some minor
-differences. In particular, due to issues with the longevity of the Arduino EEPROM
-memory, the ``++savecfg`` command has been implemented differently. Details of all
-commands can be found in the Command Reference section.
+The interface firmware supports standard Prologix_ commands and adheres closely to the
+Prologix syntax but there are some minor differences. In particular, due to issues with
+the longevity of the Arduino EEPROM memory, the ``++savecfg`` command has been
+implemented differently. Details of all commands can be found in the :ref:`Command Reference`
+section.
+
+.. _Arduino: https://arduino.cc
+.. _Uno: https://store.arduino.cc/products/arduino-uno-rev3
+.. _Nano: https://store.arduino.cc/products/arduino-nano
+.. _`Mega 2560`: https://store.arduino.cc/products/arduino-mega-2560-rev3
+.. _`Micro 32U4`: https://store.arduino.cc/products/arduino-micro
+
+.. _ESP32: https://www.espressif.com
+.. _`ESP32 and ESP32S2 devkits`: https://www.espressif.com/en/products/devkits
+
+.. _Prologix: http://prologix.biz/gpib-usb-4.2-faq.html
+
+
 
 Installation
 ------------
@@ -60,9 +75,10 @@ chipsets.
 Firmware Upgrades
 -----------------
 
-The firmware is upgradeable via the Arduino IDE in the usual manner, however an AVR
-programmer can also be used to upload the firmware to the Arduino microcontroller.
-Updates are available from https://github.com/Twilight-Logic/AR488
+The firmware is upgradeable via the Arduino IDE or platformio_ `command line tool`_ in
+the usual manner, however an AVR programmer can also be used to upload the firmware to
+the Arduino microcontroller. Pre-compiled firmwares for some boards are available from
+https://github.com/Twilight-Logic/AR488
 
 
 Client Software
@@ -82,7 +98,11 @@ parity, 8 data bits and 1 stop bit when connecting to the interface. On Linux, t
 will be a TTY device such as ``/dev/ttyUSB0`` or ``/dev/ttyACM0``.
 
 Specific considerations apply when using an Arduino based interface with EZGPIB and the
-KE5FX toolkit. These are described in the `Working with EZGPIB and KE5FX` section.
+KE5FX toolkit. These are described in the :ref:`EZGPIB` section.
+
+For using Bluetooth or Wifi to connect to the AR488, please refer to the
+:ref:`Remote Connection` section.
+
 
 Operating Modes
 ---------------
