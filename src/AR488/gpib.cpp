@@ -1012,3 +1012,21 @@ void GPIB::assertIfc() {
 	  controller.cmdstream->println(F("IFC signal asserted for 150 microseconds"));
   }
 }
+
+void GPIB::setATN(bool atn) {
+  if (atn != ATNasserted)
+    if (verbose()) {
+ 	  controller.cmdstream->print(F("ATN state changed to "));
+ 	  controller.cmdstream->println(atn);
+	}
+  ATNasserted = atn;
+}
+
+void GPIB::setSRQ(bool srq) {
+  if (srq != SRQasserted)
+    if (verbose()) {
+ 	  controller.cmdstream->print(F("SRQ state changed to "));
+ 	  controller.cmdstream->println(srq);
+	}
+  SRQasserted = srq;
+}

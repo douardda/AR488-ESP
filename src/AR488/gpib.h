@@ -49,8 +49,8 @@ public:
   bool isSRQ() {return SRQasserted;}
   void clearATN() {ATNasserted = false;}
   void clearSRQ() {SRQasserted = false;}
-  void setATN(bool atn) {ATNasserted = atn;}
-  void setSRQ(bool srq) {SRQasserted = srq;}
+  void setATN(bool atn);
+  void setSRQ(bool srq);
 
   bool verbose() {return controller.config.isVerb;}
 
