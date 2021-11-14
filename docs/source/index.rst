@@ -230,7 +230,9 @@ to provide Bluetooth communication, it has to be configured manually.
 
    configuration
    commands
+   macros
    build
+   bluetooth
    tools
    appendixes
 

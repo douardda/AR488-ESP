@@ -139,7 +139,12 @@ to the ASCII character code of the current character.
 ``++help``
 ++++++++++
 
-Not currently supported.
+Display the list of commands with a short description, or the short desription of given
+command.
+
+:Modes: controller, device
+:Syntax: ``help [command]``
+
 
 ``++ifc``
 +++++++++
@@ -315,7 +320,8 @@ These include:
 This command saves the current interface configuration. On the Prologix interface
 setting this to 1 would enable the saving of specific parameters whenever they are
 changed, including ``addr``, ``auto``, ``eoi``, ``eos``, ``eot_enable``, ``eot_char``,
-``mode`` and ``read_tmo_ms``.
+``mode`` and ``read_tmo_ms``. If supported, the wifi configuration will also be saved
+using this command.
 
 Frequent updates wear out the EEPROM and the Arduino EEPROM has a nominal lifetime of
 100,000 writes. In order to minimize writes and preserve the longevity of the EEPROM
@@ -334,7 +340,7 @@ support EEPROM, then the following will be returned: EEPROM not supported.
 
 The ``++savecfg`` command will save the following current parameter values: ``addr``,
 ``auto``, ``eoi``, ``eos``, ``eot_enable``, ``eot_char``, ``mode``, ``read_tmo_ms`` and
-``verstr``.
+``verstr``; and if supported, ``wifi ssid`` and ``wifi passkey``.
 
 :Modes: controller, device
 :Syntax: ``++savecfg``
@@ -349,7 +355,7 @@ a serial poll of the instrument at the specified address is performed. The comma
 returns a single 8-bit decimal number representing the status byte of the instrument.
 
 The command can also be used to serial poll multiple instruments. Up to 15 addresses can
-be specified. If the all parameter is specified (or the command ``++allspoll`` is used),
+be specified. If the all parameter is specified (or the command ``++aspoll`` is used),
 then a serial poll of all 30 primary instrument addresses is performed.
 
 When polling multiple addresses, the ``++spoll`` command will return the address and
@@ -398,6 +404,22 @@ always reserved as the ``RQS`` bit. Other bits can be assigned as required.
 |   |        |    |            |Rear   |       |         |Rear sw.   |            |
 +---+--------+----+------------+-------+-------+---------+-----------+------------+
 
+.. wavedrom::
+
+   {
+   reg:[
+     {bits:1, name:'ERR',type:2},
+     {bits:1, name:'ARNG'},
+     {bits:1, name:'AZERO'},
+     {bits:1, name:'RMT'},
+     {bits:1, name:'OUT'},
+     {bits:1, name:'CAL'},
+     {bits:1, name:'RQS', type:4},
+     {bits:1, name:'0', type:1}
+   ],
+   config:{bits:8,lanes:1,compact:true}}
+
+
 The values of the bits to be set can be added together to arrive at the desired status
 byte value. For example, to assert ``SRQ``, a value of ``0x40`` (64) would be
 sufficient. However if we wanted to use bit 1 to indicate an operational error, then a
@@ -435,7 +457,7 @@ with the parameter ``real`` will always display the original AR488 version strin
 Custom commands
 ---------------
 
-``++allspoll``
+``++aspoll``
 ++++++++++++++
 
 Alias equivalent to ``++spoll all``. See ``++spoll`` for further details.
@@ -589,10 +611,9 @@ to set it up or to perform a particular task. Where such a sequence of commands 
 performed regularly and repeatedly, it is beneficial to have a means to pre-program the
 sequence and to be able to run it with a single command.
 
-The AR488 allows up to 9 sequences to be programmed into the Arduino sketch that can be
-run using the ``++macro`` command. When no parameters have been specified, the macro
-command will return a list of numbers indicating which macros have been defined and are
-available to use.
+The AR488 allows up to 9 sequences to be programmed into the NVS/EEPROM that can be
+defined or run using the ``++macro`` command. When no parameters have been specified,
+the macro command will return the list of defined macros with their content.
 
 When called with a single number between 1 and 9 as a parameter, the command will run
 the specified macro.
@@ -600,8 +621,10 @@ the specified macro.
 Programming macros is beyond the scope of this manual and will be specific to each
 instrument or implemented programming language or protocol.
 
+See the :ref:`macros` section for more details on how to use this command.
+
 :Modes: controller
-:Syntax: ``++macro [1-9]``
+:Syntax: ``++macro [1-9] [set|del]``
 
 
 ``++ppoll``
@@ -719,6 +742,22 @@ poll is automatically executed.
 :Modes: controller
 :Syntax: ``++srqauto [0|1]``
 		 where 0=disabled, 1=enabled
+
+
+``++tct``
++++++++++
+
+Send the Take Control (TCT) message to the device given as argument to make it the new
+Controller in Charge. If no error occurs during the execution of the Take Control
+sequence, the AR488 is set in Device mode automatically. It's (for now) the
+responsibility of the user to detect when the Active Controller has finished his job and
+the Controller In Charge has been passed back to the AR488 (typically the device that
+took control will send a SRQ message).
+
+:Modes: controller
+:Syntax: ``++tct addr``
+		 where addr is the address of the device to which the control is passed
+
 
 ``++tmbus``
 +++++++++++

@@ -13,4 +13,5 @@ Here are the connection diagrams and technical information for each supported bo
    boards/mega2560
    boards/micro
    boards/leonardo_r3
+   boards/esp32
    xdiag

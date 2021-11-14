@@ -31,6 +31,7 @@ release = '0.49.14'
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
 extensions = [
+    "sphinxcontrib.wavedrom"
 ]
 
 # Add any paths that contain templates here, relative to this directory.

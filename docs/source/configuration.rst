@@ -3,12 +3,16 @@
 Configuration
 =============
 
-Configuration of the AR488 is achieved be editing the `AR488_Config.h` file. This is a
-C++ style header file containing various definition statements, also known as ‘define
-macros’ , starting with keyword `#define`, that can be used to configure the firmware.
-The `AR488_config.h` file must be included in the main AR488 sketch as well as any other
-module header file (e.g. `AR488_Layouts.cpp` and `AR488_Layouts.h`) with an include
-statement:
+Configuration of the AR488 is achieved by defining a number of directives. This can be
+done either by editing the `AR488_Config.h` file (more suitable if you use the Arduino
+IDE to compile the firmware), or via the ``-D`` compilation flag, which can typically be
+done in the `platforio.ini` file if you are using PlatformIO to build the firmware.
+
+This is a C++ style header file containing various definition statements, also known as
+‘define macros’ , starting with keyword `#define`, that can be used to configure the
+firmware. The `AR488_config.h` file must be included in the main AR488 sketch as well as
+any other module header file (e.g. `AR488_Layouts.cpp` and `AR488_Layouts.h`) with an
+include statement:
 
 .. code-block:: c++
 
@@ -23,73 +27,40 @@ in any other file.
 Firmware version
 ----------------
 
-This is in the format:
+Use this in the `AR488_Config.h` file:
 
 .. code-block:: c++
 
    #define FWVER "AR488 GPIB controller, ver. 0.48.08, 27/01/2020"
 
-This entry should not exceed 47 characters and should not be changed.
+or, in the `platformio.ini` file:
+
+.. code-block:: ini
+
+   [env:yourenv]
+   build_flags = -D FWVER="AR488 GPIB controller, ver. 0.48.08, 27/01/2020"
+
+This entry should not exceed 47 characters.
 
 
 Board Selection and serial port configuration
 ---------------------------------------------
 
-The AR488 supports a number of Arduino AVR boards and also a custom GPIO pin layout
-which can be defined by the user in the Custom Board Layout section. If a custom GPIO
-pin layout is to be used, then following entry must have the comment characters
-(preceding ``//``) removed:
+The AR488 supports a number of Arduino AVR boards, for which most of the configuration
+parameters are pre-configured. For ESP32 boards and other unsupported AVR, a custom GPIO
+pin layout which can be defined by the user in the Custom Board Layout section. If a
+custom GPIO pin layout is to be used, then following entry must be defined:
 
 .. code-block:: c++
 
-   //#define AR488_CUSTOM
+   #define AR488_CUSTOM
 
-Otherwise, the comment characters should remain in place which has the effect of
-disabling the definition by designating it as a comment. The compiler ignores comment
-statements. Following this is an ``#ifdef`` statement containing several sections
-preceded by an ``#elif`` keyword. Each of these is followed by a token that corresponds
-to known Arduino definitions for microprocessor types. The structure looks like this:
+or
 
-.. code-block:: c++
+.. code-block:: ini
 
-   /*
-   * Configure the appropriate board/layout section
-   * below as required
-   */
-   #ifdef AR488_CUSTOM
-   ...
-   #elif __AVR_Atmega328P__
-   ...
-   #elif __AVR_Atmega32U4__
-   ...
-   #elif __AVR_Atmega2560__
-   ...
-   #endif // Board/layout selection
-
-When the custom layout is selected, all other layouts are ignored. If the custom layout
-is not selected, then the section corresponding to the automatically detected Arduino
-microprocessor will apply. Each section contains a definition referencing one or more
-pre-defined board layouts as well as serial port definitions corresponding to the
-features of specific boards. For example here are the definitions for boards based on
-the 328p microcontroller which are found within the ``__AVR_Atmega328P__`` section of
-the ``#ifdef`` statement:
-
-.. code-block:: c++
-
-   /* Board/layout selection */
-   #define AR488_UNO
-   //#define AR488_NANO
-   /*** Serial ports ***/
-   //Select HardwareSerial or SoftwareSerial (default = HardwareSerial) ***/
-   // The UNO/NANO default hardware port is 'Serial'
-   // (Comment out #define AR_HW_SERIAL if using SoftwareSerial)
-   #define AR_HW_SERIAL
-   #ifdef AR_HW_SERIAL
-   #define AR_SERIAL_PORT Serial
-   #else
-   // Select software serial port
-   #define AR_SW_SERIAL
-   #endif
+   [env:yourenv]
+   build_flags = -D AR488_CUSTOM
 
 
 The section contains definitions for two boards, namely the Uno and the Nano. Only ONE
@@ -101,10 +72,14 @@ of these should be selected by removing the preceding comment characters:
    //#define AR488_NANO
 
 The default entry is ``AR488_UNO``, which selects the pre-defined template for the
-Arduino UNO board in ``AR488_Hardware.h``. Selecting ``AR488_NANO`` will select the
-pre-defined template for the Nano board. In order to compile the sketch for the selected
-board, in addition to selecting the template in ``Config.h``, the correct board must be
-selected in the Board Manager within the Arduino IDE (see the ``Tools | Board:`` menu).
+Arduino UNO board. Selecting ``AR488_NANO`` will select the pre-defined template for the
+Nano board. When using the Arduino IDE, in order to compile the sketch for the selected
+board, in addition to selecting the template in ``AR488_Config.h``, the correct board
+must be selected in the Board Manager within the Arduino IDE (see the ``Tools | Board:``
+menu).
+
+With PlatformIO, the proper board must be selected in the `platformio.ini` file.
+
 
 Following this are definitions for the serial port:
 
@@ -160,6 +135,7 @@ only one port should be enabled.
 
 **It is important to make sure that the correct board is selected in the Arduino IDE
 Boards Manager (Tools => Board) otherwise the sketch will not compile correctly.**
+
 
 Software Serial port configuration
 ----------------------------------
@@ -266,177 +242,6 @@ The entry should be preceded by ``//`` to indicate that it has been commented ou
 Interrupts are used by default on supported boards because they usually respond faster
 than in-loop checking.
 
-Macro support
--------------
-
-Macros in this context are short sequences of commands that can be used to accomplish a
-particular task. Controlling an instrument usually requires sequences of commands to be
-sent to the device to configure it, or to perform a particular task. Sometimes such
-sequences are performed frequently or repetitively. In those circumstances, it may be
-more efficient to pre- program the required sequence and then execute it when required
-using a single command.
-
-The AR488 supports a macro feature which allows user programmed command sequences to be
-run when the interface starts up, as well as up to 9 user defined command sequences to be
-executed at runtime.
-
-Macros must be programmed before the sketch is compiled and uploaded to the interface.
-Macros can be added to the designated ``AR488 MACROS SECTION`` in the ``AR488_Config.h``
-file. Both interface ``++`` commands and direct instrument commands can be included in
-macros. Programming specific instruments is beyond the scope of this manual as commands
-will be specific to each instrument or implemented according to the manufacturers choice
-of programming language or protocol. However, in general, in order to create macros, a
-few simple rules will need to be followed.
-
-Firstly, macros need to be enabled. In the ``AR488_Config.h`` file there are two
-definitions under the heading "Enable Macros":
-
-.. code-block::
-
-   #define USE_MACROS   // Enable the macro feature
-   #define RUN_STARTUP  // Run MACRO_0 (the startup macro)
-
-The ``#define USE_MACROS`` construct enables or disables the macro feature. When this line
-is commented out by preceding it with ``//`` then macros are disabled. Removing the
-preceding ``//`` will enable the macro feature.
-
-The ``#define RUN_STARTUP`` statement controls whether the start-up macro will run when
-the interface is powered up or re-started. The start-up macro is designated ``MACRO_0``
-and if ``#define RUN_STARTUP`` is enabled, this macro will run when the interface is
-powered on or reset.
-
-When ``#define USE_MACROS`` is disabled, then the start-up macro will not be activated
-when the interface is powered up or reset and none of the user macros (1-9) will be
-available at runtime.
-
-When enabled, ``MACRO_0`` will run when the interface is powered up or reset but only if
-``#define RUN_STARTUP`` is also enabled. The user macros (1-9) will always be available
-and can be executed by the user at runtime by using the ``++macro`` command. For more
-information please see the ``++macro`` command heading in the :ref:`Command Reference`.
-
-The start-up macro can be used in addition to the interface settings that can be saved
-using the ``++savecfg`` command, to not only to set up the interface, but also to
-initialise and configure the instrument for a specific function. In this way, instrument
-commands that select function, range and other control features can be sent
-automatically as the interface starts up.
-
-Unless steps have been taken to disable the automatic reset that occurs when a USB
-serial connection is opened to the interface, the start-up macro will run every time
-that a serial connection is initiated to the interface. On the other hand, disabling
-reset prevents the Arduino from being programmed via USB, so is not advised unless the
-intention is to program the Arduino using a suitable AVR programmer.
-
-In the ``AR488_Config.h`` file, sketch, below the help information there is a section
-that starts:
-
-.. code-block:: c++
-
-   /********************************/
-   /***** AR488 MACROS SECTION *****/
-   /***** vvvvvvvvvvvvvvvvvvvv *****/
-   #ifdef USE_MACROS
-
-Macros are defined here. The first macro is the startup macro, an example of which might
-be defined as follows:
-
-.. code-block:: c++
-
-   #define MACRO_0 "\
-   ++addr 9\n\
-   ++auto 2\n\
-   *RST\n\
-   :func 'volt:ac'
-   "
-   /* End of MACRO_0 (Startup macro)*/
-
-All macro commands comprising the macro must be placed after the ``\`` on the first line
-and before the final quote on the line before the ending comment. Nothing outside of
-these lines, including the quote marks and the ``\`` and after the macro name should be
-modified. The final quote mark can be appended to the last command in the sequence if
-preferred. It is shown here on a separate line for clarity. Everything between the two
-quote marks is a string of characters and must be delimited. The ``\`` character
-indicate to the pre-processor that the string continues on the next line.
-
-Each command ends with ``\n`` which is the newline terminator and serves to delimit each
-command. The actual sequence shown above is therefore comprised of 4 commands, each
-command ending with ``\n`` and then a ``\`` to indicate that the next command is to
-follow on the next line. Try to avoid leaving or including any unnecessary spaces.
-
-Each of these commands is either a standard AR488 interface command found in the command
-reference, or an instrument specific command. All AR488 interface Prologix style
-commands begin with ``++`` so the first two commands set the GPIB ``address`` to 7 and
-``auto`` to 1. The next two commands are direct instrument commands using the SCPI
-protocol, the first of which resets the instrument and the second selects the instrument
-AC voltage function.
-
-As shown, each command must be terminated with a ``\n`` (newline) or ``\r`` (carriage
-return) delimiter character.
-
-User defined macros that can be run using the ``++macro`` command follow next, and have
-a similar format, e.g:
-
-.. code-block:: c++
-
-   #define MACRO_2 "\
-   "
-   /*<-End of macro 2*/
-
-Once again, the required command sequence must be placed between the two quotes and
-after the first ``/`` and be terminated with a ``\n`` or ``\r`` delimiter. Each line
-must be wrapped with ``\``.
-
-There is a slightly shorter method of defining a macro by placing all commands on a single line. For
-example this:
-
-.. code-block:: c++
-
-   #define MACRO_1 "++addr 7\n++auto 1\n*RST\n:func 'volt:ac'"
-
-Is exactly the same as this:
-
-.. code-block:: c++
-
-   #define MACRO_1 "\
-   ++addr 7\n\
-   ++auto 1\n\
-   *RST\n\
-   :func 'volt:ac'\
-   "
-
-The first definition is more condensed and requires no line wrap characters, but it is
-perhaps easier to see what is going on in the latter example. Either will function just
-the same and take up the same amount of memory.
-
-The macro definition area provided in the sketch ends with:
-
-.. code-block:: c++
-
-   #endif
-   /***** ^^^^^^^^^^^^^^^^^^^^ *****/
-   /***** AR488 MACROS SECTION *****/
-   /********************************/
-
-Anything outside of this section does not relate to macros.
-
-Provided that the commands have been specified correctly and the syntax is correct, the
-sketch should compile and can be uploaded to the Arduino. The start-up macro will run as
-soon as the upload is completed so the instrument should respond immediately. Please be
-aware that, unless serial reset has been disabled, it will run again when a USB serial
-connection is made to the interface. The instrument will probably respond and
-reconfigure itself again.
-
-Please note that, although AR488 interface ``++`` commands are verified by the
-interface, and will respond accordingly, there is no sanity checking by the interface of
-any direct instrument commands. These command sequences are sent directly to the
-instrument, which should respond as though the command sequence were typed directly into
-the terminal or sent from a suitable instrument control program. Please consult the
-instrument user manual for information about the behaviour expected in response to
-instrument commands.
-
-Macro sequences can include any number delimiter separated of commands, but any
-individual command sequence should not exceed 126 characters. This may be particularly
-relevant to SCPI commands which can be composed of multiple instructions separated by
-colons.
 
 SN7516x GPIB transceiver support
 --------------------------------
@@ -475,9 +280,9 @@ will just return::
 
   Unavailable.
 
-If a separate GPIO pin is used to control DC then the ++REN command will return the
+If a separate GPIO pin is used to control DC then the ``++REN`` command will return the
 status of ``REN`` as usual. (See ``++ren`` in the `Custom Commands` section of the
-`Command Reference`_).
+:ref:`Command Reference`).
 
 Bluetooth HC05 module Options
 -----------------------------
