@@ -902,7 +902,11 @@ void ren_h(char *params, Controller& controller) {
 
 /***** Enable verbose mode 0=OFF; 1=ON *****/
 void verb_h(char *params, Controller& controller) {
-  controller.config.isVerb = !controller.config.isVerb;
+  uint16_t val;
+  if (params != NULL) {
+    if (notInRange(params, 0, 1, val, controller)) return;
+    controller.config.isVerb = val ? true : false;
+    }
   controller.cmdstream->print("Verbose: ");
   controller.cmdstream->println(controller.config.isVerb ? "ON" : "OFF");
 }
