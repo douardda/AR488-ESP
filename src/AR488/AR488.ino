@@ -94,9 +94,10 @@ void setup() {
 	controller->serialstream->println("Config init...");
   controller->initConfig();
 	controller->serialstream->println("Config init done");
-#if defined(USE_MACROS) && defined(RUN_STARTUP)
+#if defined(USE_MACROS)
   // Run startup macro
-  execMacro(0, controller);
+	if (isMacro(0))
+			execMacro(0, *controller);
 #endif
 
 	if (controller->verbose()) {
