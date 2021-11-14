@@ -192,9 +192,9 @@ void loop() {
 				controller->sendToInstrument();
 				controller->showPrompt();
 			}
-    }else if (controller->isRO) {
+    } else if (controller->isRO) {
       gpib->lonMode();
-    }else{
+    } else {
 			if (gpib->isATN()) gpib->attnRequired();
       if (controller->lnRdy == 2) {
 				controller->sendToInstrument();

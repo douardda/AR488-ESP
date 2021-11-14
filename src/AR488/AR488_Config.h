@@ -49,8 +49,10 @@
 /*** UNO and NANO boards ***/
 #elif __AVR_ATmega328P__
   /* Board/layout selection */
+#if !defined(AR488_UNO) && !defined(AR488_NANO)
   #define AR488_UNO
   //#define AR488_NANO
+#endif
   /*** Serial ports ***/
   //Select HardwareSerial or SoftwareSerial (default = HardwareSerial) ***/
   // The UNO/NANO default hardware port is 'Serial'
@@ -113,8 +115,8 @@
 /***** Software Serial Support *****/
 /*
  * Configure the SoftwareSerial TX/RX pins and baud rate here
- * Note: SoftwareSerial support conflicts with PCINT support
- * When using SoftwareSerial, disable USE_INTERRUPTS.
+ * Note: SoftwareSerial support can conflicts with PCINT support
+ * if so, when using SoftwareSerial, disable USE_INTERRUPTS.
  */
 #ifdef AR_SW_SERIAL
   #define AR_SW_SERIAL_RX 53

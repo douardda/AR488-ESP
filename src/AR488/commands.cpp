@@ -512,42 +512,43 @@ void trg_h(char *params, Controller& controller) {
     cnt++;
   } else {
     // Read address parameters into array
-    while (cnt < 15) {
-      if (cnt == 0) {
-        param = strtok(params, " \t");
-      } else {
-        param = strtok(NULL, " \t");
-      }
+	for(param=strtok(params, " \t"), cnt=0;
+		(param != NULL) && (cnt < 15);
+		param = strtok(NULL, " \t"), ++cnt) {
       if (notInRange(param, 1, 30, val, controller)) return;
       addrs[cnt] = (uint8_t)val;
-      cnt++;
     }
   }
+  if (controller.config.isVerb) controller.cmdstream->println(String("Got ") + cnt + " add to trigger");
 
   // If we have some addresses to trigger....
   if (cnt > 0) {
     for (int i = 0; i < cnt; i++) {
       // Address the device
       if (gpib.addrDev(addrs[i], 0)) {
-        if (controller.config.isVerb) controller.cmdstream->println(F("Failed to address device"));
-        return;
+        if (controller.config.isVerb)
+		  controller.cmdstream->println(String("Failed to address device ") + addrs[i]);
+        continue;
       }
       // Send GTL
       if (gpib.gpibSendCmd(GC_GET))  {
-        if (controller.config.isVerb) controller.cmdstream->println(F("Failed to trigger device"));
-        return;
+        if (controller.config.isVerb)
+		  controller.cmdstream->println(String("Failed to send command to device ") + addrs[i]);
+        continue;
       }
       // Unaddress device
       if (gpib.uaddrDev()) {
-        if (controller.config.isVerb) controller.cmdstream->println(F("Failed to unlisten GPIB bus"));
-        return;
+        if (controller.config.isVerb)
+		  controller.cmdstream->println(String("Failed to unaddress device ") + addrs[i]);
+        continue;
       }
     }
 
     // Set GPIB controls back to idle state
     gpib.setGpibControls(CIDS);
 
-    if (controller.config.isVerb) controller.cmdstream->println(F("Group trigger completed."));
+    if (controller.config.isVerb)
+	  controller.cmdstream->println(F("Group trigger completed."));
   }
 }
 
@@ -590,12 +591,9 @@ void spoll_h(char *params, Controller& controller) {
     j = 1;
   } else {
     // Read address parameters into array
-    while (j < 15) {
-      if (j == 0) {
-        param = strtok(params, " \t");
-      } else {
-        param = strtok(NULL, " \t");
-      }
+	for(param=strtok(params, " \t"), j=0;
+		(param != NULL) && (j < 15);
+		param = strtok(NULL, " \t"), ++j) {
       // The 'all' parameter given?
       if (strncmp(param, "all", 3) == 0) {
         all = true;
@@ -603,17 +601,17 @@ void spoll_h(char *params, Controller& controller) {
         if (controller.config.isVerb) controller.cmdstream->println(F("Serial poll of all devices requested..."));
         break;
         // Read all address parameters
-      } else if (strlen(params) < 3) { // No more than 2 characters
-        if (notInRange(param, 1, 30, val, controller)) return;
-        addrs[j] = (uint8_t)val;
-        j++;
+      } else if ((strlen(params) < 3) && !(notInRange(param, 1, 30, val, controller))) {
+		addrs[j] = (uint8_t)val;
       } else {
         errBadCmd(controller);
         if (controller.config.isVerb) controller.cmdstream->println(F("Invalid parameter"));
-        return;
+		return;
       }
     }
   }
+  if (controller.config.isVerb)
+    controller.cmdstream->println(String("Got ") + j + " devices to spoll");
 
   // Send Unlisten [UNL] to all devices
   if ( gpib.gpibSendCmd(GC_UNL) )  {
@@ -673,7 +671,8 @@ void spoll_h(char *params, Controller& controller) {
           // If all, return specially formatted response: SRQ:addr,status
           // but only when RQS bit set
           if (sb & 0x40) {
-            controller.cmdstream->print(F("SRQ:")); controller.cmdstream->print(i); controller.cmdstream->print(F(",")); controller.cmdstream->println(sb, DEC);
+            controller.cmdstream->print(String(F("SRQ:")) + val + F(","));
+            controller.cmdstream->println(sb, DEC);
             i = j;
           }
         } else {
@@ -1001,34 +1000,32 @@ void repeat_h(char *params, Controller& controller) {
   if (params != NULL) {
     // Count (number of repetitions)
     param = strtok(params, " \t");
-    if (strlen(param) > 0) {
-      if (notInRange(param, 2, 255, count, controller)) return;
-    }
+    if (notInRange(param, 2, 255, count, controller)) return;
+
     // Time delay (milliseconds)
     param = strtok(NULL, " \t");
-    if (strlen(param) > 0) {
-      if (notInRange(param, 0, 30000, tmdly, controller)) return;
-    }
+	if (notInRange(param, 0, 30000, tmdly, controller)) return;
 
     // Pointer to remainder of parameters string
     param = strtok(NULL, "\n\r");
-    if (strlen(param) > 0) {
+    if ((param == NULL) || (strlen(param) == 0)) {
+      errBadCmd(controller);
+      if (controller.config.isVerb)
+		controller.cmdstream->println(F("Missing parameter"));
+      return;
+	} else {
       for (uint16_t i = 0; i < count; i++) {
         // Send string to instrument
 		gpib.gpibSendData(param, strlen(param), false);
         delay(tmdly);
         gpib.gpibReceiveData();
       }
-    } else {
-      errBadCmd(controller);
-      if (controller.config.isVerb) controller.cmdstream->println(F("Missing parameter"));
-      return;
-    }
+	}
   } else {
     errBadCmd(controller);
-    if (controller.config.isVerb) controller.cmdstream->println(F("Missing parameters"));
+    if (controller.config.isVerb)
+	  controller.cmdstream->println(F("Missing parameters"));
   }
-
 }
 
 
@@ -1158,6 +1155,12 @@ void id_h(char *params, Controller& controller) {
 
   if (params != NULL) {
     keyword = strtok(params, " \t");
+	if ((keyword == NULL) || strlen(keyword) == 0) {
+	  if (controller.config.isVerb)
+		controller.cmdstream->println(F("Missing keyword (verstr, name or serial)"));
+	  return;
+	}
+
     datastr = keyword + strlen(keyword) + 1;
     dlen = strlen(datastr);
     if (dlen) {
@@ -1183,7 +1186,7 @@ void id_h(char *params, Controller& controller) {
         }
         return;
       }
-      if (strncmp(keyword, "name", 4)==0) {
+      else if (strncmp(keyword, "name", 4)==0) {
         if (dlen>0 && dlen<16) {
           memset(controller.config.sname, '\0', 16);
           strncpy(controller.config.sname, datastr, dlen);
@@ -1193,7 +1196,7 @@ void id_h(char *params, Controller& controller) {
         }
         return;
       }
-      if (strncmp(keyword, "serial", 6)==0) {
+      else if (strncmp(keyword, "serial", 6)==0) {
         if (dlen < 10) {
           controller.config.serial = atol(datastr);
         }else{
@@ -1202,25 +1205,30 @@ void id_h(char *params, Controller& controller) {
         }
         return;
       }
-//      errBadCmd(controller);
-    }else{
+	  else {
+		if (controller.config.isVerb)
+		  controller.cmdstream->println(F("Invalid keyword ([verstr, name, serial])"));
+		return;
+	  }
+    } else {  // display kw value
       if (strncmp(keyword, "verstr", 6)==0) {
         controller.cmdstream->println(controller.config.vstr);
-        return;
       }
-      if (strncmp(keyword, "name", 4)==0) {
+      else if (strncmp(keyword, "name", 4)==0) {
         controller.cmdstream->println(controller.config.sname);
-        return;
       }
-      if (strncmp(keyword, "serial", 6)==0) {
+      else if (strncmp(keyword, "serial", 6)==0) {
         memset(serialStr, '\0', 10);
         snprintf(serialStr, 10, "%09lu", controller.config.serial);  // Max str length = 10-1 i.e 9 digits + null terminator
         controller.cmdstream->println(serialStr);
-        return;
       }
+	  else {
+		if (controller.config.isVerb)
+		  controller.cmdstream->println(F("Invalid keyword ([verstr, name, serial])"));
+	  }
     }
   }
-  errBadCmd(controller);
+  //errBadCmd(controller);
 }
 
 
@@ -1250,6 +1258,8 @@ void idn_h(char * params, Controller& controller){
 bool notInRange(char *param, uint16_t lowl, uint16_t higl, uint16_t &rval, Controller& controller) {
 
   // Null string passed?
+  if (param == NULL) return true;
+  // Empty string passed?
   if (strlen(param) == 0) return true;
 
   // Convert to integer
@@ -1304,7 +1314,6 @@ void wifi_h(char *params, Controller& controller) {
 			controller.cmdstream->println(F("Length of ssid string must not exceed 31 characters!"));
           errBadCmd(controller);
         }
-        return;
       }
       else if (strncmp(keyword, "pass", 4)==0) {
         if (dlen>0 && dlen<64) {
@@ -1315,28 +1324,30 @@ void wifi_h(char *params, Controller& controller) {
 			controller.cmdstream->println(F("Length of pass must not exceed 63 characters!"));
           errBadCmd(controller);
         }
-        return;
       }
+	  else {
+		if (controller.config.isVerb)
+		  controller.cmdstream->println(F("Invalid keyword ([ssid, pass, connect, scan])"));
+	  }
     } else {
       if (strncmp(keyword, "ssid", 6)==0) {
         controller.cmdstream->println(controller.config.ssid);
-        return;
       }
       else if (strncmp(keyword, "pass", 4)==0) {
         controller.cmdstream->println(controller.config.passkey);
-        return;
       }
       else if (strncmp(keyword, "connect", 7)==0) {
         controller.setupWifi();
-        return;
       }
       else if (strncmp(keyword, "scan", 4)==0) {
         controller.scanWifi();
-        return;
       }
+	  else {
+		if (controller.config.isVerb)
+		  controller.cmdstream->println(F("Invalid keyword ([ssid, pass, connect, scan])"));
+	  }
     }
   }
-  errBadCmd(controller);
 }
 #endif
 
