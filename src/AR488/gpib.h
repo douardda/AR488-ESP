@@ -21,6 +21,7 @@ public:
 
   bool addrDev(uint8_t addr, bool dir);
   bool uaddrDev();
+  bool takeControl(uint8_t);
 
   bool isTerminatorDetected(uint8_t bytes[3], uint8_t eor_sequence);
   bool isAtnAsserted();
@@ -41,6 +42,7 @@ public:
   void spe_h();
   void unl_h();
   void unt_h();
+  void tct_h();
   void lonMode();
 
   bool isATN() {return ATNasserted;}

@@ -35,6 +35,7 @@
 #define GC_SDC 0x04
 #define GC_PPC 0x05
 #define GC_GET 0x08
+#define GC_TCT 0x09
 
 /***** GPIB control states *****/
 // Controller mode

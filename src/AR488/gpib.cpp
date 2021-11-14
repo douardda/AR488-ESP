@@ -610,6 +610,17 @@ bool GPIB::uaddrDev() {
 }
 
 
+bool GPIB::takeControl(uint8_t addr) {
+  if (gpibSendCmd(GC_UNL)) return ERR;
+  if (gpibSendCmd(GC_UNT)) return ERR;
+  if (gpibSendCmd(GC_TAD + addr)) return ERR;
+  if (gpibSendCmd(GC_TCT)) return ERR;
+  // put the controller in Device mode
+  config.cmode = 1;
+  initDevice();
+  return OK;
+}
+
 /**********************************/
 /*****  GPIB CONTROL ROUTINES *****/
 /**********************************/

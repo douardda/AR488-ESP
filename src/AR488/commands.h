@@ -50,6 +50,7 @@ void ppoll_h(char *params, Controller&);
 void ren_h(char *params, Controller&);
 void verb_h(char *params, Controller&);
 void setvstr_h(char *params, Controller&);
+void tct_h(char *params, Controller&);
 void ton_h(char *params, Controller&);
 void srqa_h(char *params, Controller&);
 void repeat_h(char *params, Controller&);

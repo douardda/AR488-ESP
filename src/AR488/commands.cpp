@@ -51,6 +51,7 @@ static cmdRec cmdHidx [] = {
   { "repeat",      2, repeat_h    },
   { "setvstr",     3, setvstr_h   },
   { "srqauto",     2, srqa_h      },
+  { "tct",         2, tct_h       },
   { "ton",         1, ton_h       },
   { "tmbus",       3, tmbus_h     },
   { "verbose",     3, verb_h      },
@@ -223,6 +224,27 @@ void eoi_h(char *params, Controller& controller) {
     };
   } else {
     controller.cmdstream->println(controller.config.eoi);
+  }
+}
+
+/***** Show or set EOI assertion on/off *****/
+void tct_h(char *params, Controller& controller) {
+  uint16_t val;
+  if (params != NULL) {
+    if (notInRange(params, 0, 30, val, controller)) return;
+    if (val == controller.config.caddr) {
+      errBadCmd(controller);
+      if (controller.config.isVerb) controller.cmdstream->println(F("That is my address! Address of a remote device is required."));
+      return;
+    }
+    if (controller.gpib->takeControl(val)) {
+      if (controller.config.isVerb)
+        controller.cmdstream->println("Failed to send the TCT message");
+    }
+  } else {
+    if (controller.config.isVerb) {
+      controller.cmdstream->println("The address of the device is expected.");
+    }
   }
 }
 
