@@ -4,7 +4,6 @@
 #include <Arduino.h>
 #include "AR488.h"
 //#include "gpib.h"
-#include <Vector.h>
 
 #ifdef AR488_WIFI_ENABLE
 #include <WiFi.h>
