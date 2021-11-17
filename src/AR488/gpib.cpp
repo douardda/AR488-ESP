@@ -127,6 +127,37 @@ void GPIB::gpibSendStatus() {
 }
 
 
+bool GPIB::findListeners(uint8_t addrs[31]) {
+  if (config.cmode == 1) {
+    controller.cmdstream->println(F("FINDLSTN only available in Controller mode"));
+    return ERR;
+  }
+  uint8_t addr;
+  uint8_t i;
+
+  for(i=0; i<31; i++)
+    addrs[i] = 255;
+
+  for(addr=0, i=0; addr<31; addr++) {
+    if (addr == config.caddr) continue;
+
+    if (gpibSendCmd(GC_UNL)) return ERR;
+    if (gpibSendCmd(GC_TAD + config.caddr)) return ERR;
+    if (gpibSendCmd(GC_LAD + addr)) return ERR;
+    setGpibControls(CTAS);  // unassert ATN
+    if (!Wait_on_pin_state(LOW, NDAC, config.rtmo)) {  // 488.2 specs suggests a timeout of minimum 1.5ms
+      // found a listener
+      addrs[i] = addr;
+      i++;
+    } else {
+      // TODO search for secondary addresses
+    }
+  }
+  if (gpibSendCmd(GC_UNL)) return ERR;
+  return OK;
+}
+
+
 /***** Send a series of characters as data to the GPIB bus *****/
 void GPIB::gpibSendData(char *data, uint8_t dsize, bool bufferFull) {
 
@@ -874,7 +905,7 @@ void GPIB::attnRequired() {
     mla = false;
   }
 
-  // Addressed to listen?
+  // Addressed to talk?
   if (mta) {
     // Serial poll enabled
     if (spe) {
@@ -884,7 +915,10 @@ void GPIB::attnRequired() {
       spe_h();
       spe = false;
     // Otherwise just send data
-    }else{
+    } else if (db==GC_TCT && mta==true) {
+      tct_h();
+      mta = false;  // ?? not sure
+    } else {
       mta_h();
       mta = false;
     }
@@ -922,6 +956,12 @@ void GPIB::mta_h(){
   if (controller.lnRdy == 2) {
 	controller.sendToInstrument();
   }
+}
+
+/*** Take Control ***/
+void GPIB::tct_h(){
+  controller.config.cmode = 2;
+  controller.gpib->initController();
 }
 
 

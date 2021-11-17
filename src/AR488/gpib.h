@@ -21,7 +21,9 @@ public:
 
   bool addrDev(uint8_t addr, bool dir);
   bool uaddrDev();
+
   bool takeControl(uint8_t);
+  bool findListeners(uint8_t addrs[31]);
 
   bool isTerminatorDetected(uint8_t bytes[3], uint8_t eor_sequence);
   bool isAtnAsserted();

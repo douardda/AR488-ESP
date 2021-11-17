@@ -60,6 +60,7 @@ void xdiag_h(char *params, Controller&);
 void tmbus_h(char *params, Controller&);
 void id_h(char *params, Controller&);
 void idn_h(char * params, Controller&);
+void findlstn_h(char *params, Controller&);
 #ifdef AR488_WIFI_ENABLE
 void wifi_h(char *params, Controller&);
 #endif

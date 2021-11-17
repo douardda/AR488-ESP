@@ -43,6 +43,7 @@ static cmdRec cmdHidx [] = {
   { "aspoll",      2, aspoll_h    },
   { "dcl",         2, dcl_h       },
   { "default",     3, default_h   },
+  { "findlstn",    2, findlstn_h  },
   { "id",          3, id_h        },
   { "idn",         3, idn_h       },
   { "macro",       2, macro_h     },
@@ -806,6 +807,26 @@ void clrSrqSig() {
  */
 void aspoll_h(char *params, Controller& controller) {
   spoll_h((char*)"all", controller);
+}
+
+/***** FINDLSTN 488.2 command *****/
+/*
+ * Looks for listeners on the bus
+ * Does only look for primary addresses for now
+ */
+void findlstn_h(char *params, Controller& controller) {
+  uint8_t addrs[31];
+  if ( controller.gpib->findListeners(addrs) )  {
+    if (controller.config.isVerb) controller.cmdstream->println(F("FINDLSTN failed"));
+    return;
+  }
+  for(int i=0; i<31; i++) {
+    if (addrs[i] < 31) {
+      controller.cmdstream->print(addrs[i]);
+      controller.cmdstream->print(" ");
+    }
+  }
+  controller.cmdstream->println();
 }
 
 
