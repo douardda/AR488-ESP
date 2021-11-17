@@ -28,15 +28,11 @@ jobs:
         python -m pip install --upgrade pip
         pip install --upgrade platformio
     - name: Run PlatformIO
-      run: pio run -e uno -e micro -e mega2560_D -e f303k8
+      run: pio run -e uno -e mega2560_D -e f303k8 -e lolin32-161 -e esp32s2-161 -e ttgo-t8-161
     - uses: actions/upload-artifact@v2
       with:
         name: AR488.uno-${{github.sha}}
         path: .pio/build/uno/firmware.*
-    - uses: actions/upload-artifact@v2
-      with:
-        name: AR488.micro-${{github.sha}}
-        path: .pio/build/micro/firmware.*
     - uses: actions/upload-artifact@v2
       with:
         name: AR488.mega2560_D-${{github.sha}}
@@ -45,3 +41,15 @@ jobs:
       with:
         name: AR488.f303k8-${{github.sha}}
         path: .pio/build/f303k8/firmware.*
+    - uses: actions/upload-artifact@v2
+      with:
+        name: AR488.lolin32-161-${{github.sha}}
+        path: .pio/build/lolin32-161/firmware.*
+    - uses: actions/upload-artifact@v2
+      with:
+        name: AR488.esp32s2-161-${{github.sha}}
+        path: .pio/build/esp32s2-161/firmware.*
+    - uses: actions/upload-artifact@v2
+      with:
+        name: AR488.ttgo-t8-161-${{github.sha}}
+        path: .pio/build/ttgo-t8-161/firmware.*
