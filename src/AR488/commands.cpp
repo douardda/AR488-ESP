@@ -47,6 +47,7 @@ static cmdRec cmdHidx [] = {
   { "idn",         3, idn_h       },
   { "macro",       2, macro_h     },
   { "ppoll",       2, ppoll_h     },
+  { "prompt",      3, prompt_h    },
   { "ren",         2, ren_h       },
   { "repeat",      2, repeat_h    },
   { "setvstr",     3, setvstr_h   },
@@ -909,6 +910,17 @@ void verb_h(char *params, Controller& controller) {
     }
   controller.cmdstream->print("Verbose: ");
   controller.cmdstream->println(controller.config.isVerb ? "ON" : "OFF");
+}
+
+/***** Enable prompt mode 0=OFF; 1=ON *****/
+void prompt_h(char *params, Controller& controller) {
+  uint16_t val;
+  if (params != NULL) {
+    if (notInRange(params, 0, 1, val, controller)) return;
+    controller.config.showPrompt = val ? true : false;
+    }
+  controller.cmdstream->print("Show prompt: ");
+  controller.cmdstream->println(controller.config.showPrompt ? "ON" : "OFF");
 }
 
 

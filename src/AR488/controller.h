@@ -38,6 +38,7 @@ typedef struct {
   uint32_t serial;  // Serial number
   uint8_t idn;      // Send ID in response to *idn? 0=disable, 1=send name; 2=send name+serial
   bool isVerb;      // Verbose mode
+  bool showPrompt;  // Show a prompt (when ready to accept commands)
 #ifdef AR488_WIFI_ENABLE
   char ssid[32];    // max size for WiFiMulti.addAp is 31
   char passkey[64]; // same
@@ -59,6 +60,7 @@ public:
   void resetConfig();
   void saveConfig();
   bool verbose() {return config.isVerb;};
+  bool prompt() {return config.showPrompt;};
   void sendToInstrument();
   void setGPIB(GPIB *gpib) {this->gpib = gpib;};
   void execCmd();

@@ -241,7 +241,7 @@ void Controller::flushPbuf() {
 
 /***** Show a prompt *****/
 void Controller::showPrompt() {
-  if(verbose())
+  if(prompt())
 #ifdef USE_MACROS
 	if (editMacro < NUM_MACROS)
 	  cmdstream->print("| ");
@@ -308,9 +308,9 @@ void Controller::reset() {
 
 void Controller::resetConfig() {
   // Set default values ({'\0'} sets version string array to null)
-  config = {false, false, 2, 0, 1, 0, 0, 0, 0, 1200, 0, {'\0'}, 0, 0, {'\0'}, 0, 0, false,
+  config = {false, false, 2, 0, 1, 0, 0, 0, 0, 1200, 0, {'\0'}, 0, 0, {'\0'}, 0, 0, false, false
 #ifdef AR488_WIFI_ENABLE
-			{'\0'}, {'\0'}
+			,{'\0'}, {'\0'}
 #endif
   };
 }
@@ -337,7 +337,8 @@ void Controller::initConfig()
   config.eor = pref.getUChar("eor", config.eor);
   config.serial = pref.getUInt("serial", config.serial);
   config.idn = pref.getUInt("idn", config.idn);
-  config.isVerb = pref.getUInt("isVerb", config.isVerb);
+  config.isVerb = pref.getBool("isVerb", config.isVerb);
+  config.showPrompt = pref.getBool("showPrompt", config.showPrompt);
   if (pref.isKey("vstr")) {
 	pref.getBytes("vstr", config.vstr, 48);
   }
@@ -388,6 +389,8 @@ void Controller::saveConfig()
   pref.begin("ar488", false);
   pref.putBool("eot_en", config.eot_en);
   pref.putBool("eoi", config.eoi);
+  pref.putBool("isVerb", config.isVerb);
+  pref.putBool("showPrompt", config.showPrompt);
   pref.putUChar("cmode", config.cmode);
   pref.putUChar("caddr", config.caddr);
   pref.putUChar("paddr", config.paddr);
@@ -401,7 +404,6 @@ void Controller::saveConfig()
   pref.putUChar("eor", config.eor);
   pref.putUInt("serial", config.serial);
   pref.putUInt("idn", config.idn);
-  pref.putUInt("isVerb", config.isVerb);
 
   pref.putBytes("vstr", config.vstr, 48);
   pref.putBytes("sname", config.sname, 16);
