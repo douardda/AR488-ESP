@@ -196,3 +196,18 @@ You can save te wifi connection credentials in the EEPROM using the `++savecfg` 
 Note that the AR488 will not connect by default to the wifi on startup. If you want the
 AR488 to automatically connect to the wifi, add the `++wifi connect` command in the
 `Macro 0` (see :ref:`macros` for more details).
+
+Serial over IP
+++++++++++++++
+
+Use `ser2net` on the remote machine side:
+
+.. code-block:: bash
+
+   $ ser2net -n -C 3333:raw:0:/dev/ttyUSB0:115200 8DATABITS NONE 1STOPBIT
+
+Use `socat` on the user side:
+
+.. code-block:: bash
+
+   $ socat pty,link=$HOME/tty,waitslave tcp:<REMOTE.MACHINE>:3333
