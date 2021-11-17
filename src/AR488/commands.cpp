@@ -592,9 +592,9 @@ void spoll_h(char *params, Controller& controller) {
     j = 1;
   } else {
     // Read address parameters into array
-	for(param=strtok(params, " \t"), j=0;
-		(param != NULL) && (j < 15);
-		param = strtok(NULL, " \t"), ++j) {
+    for (param=strtok(params, " \t"), j=0;
+        (param != NULL) && (j < 15);
+        param = strtok(NULL, " \t"), ++j) {
       // The 'all' parameter given?
       if (strncmp(param, "all", 3) == 0) {
         all = true;
@@ -603,11 +603,11 @@ void spoll_h(char *params, Controller& controller) {
         break;
         // Read all address parameters
       } else if ((strlen(params) < 3) && !(notInRange(param, 1, 30, val, controller))) {
-		addrs[j] = (uint8_t)val;
+        addrs[j] = (uint8_t)val;
       } else {
         errBadCmd(controller);
         if (controller.config.isVerb) controller.cmdstream->println(F("Invalid parameter"));
-		return;
+        return;
       }
     }
   }
@@ -650,7 +650,9 @@ void spoll_h(char *params, Controller& controller) {
 
     // Don't need to poll own address
     if (val != controller.config.caddr) {
-
+      if (controller.config.isVerb) {
+        controller.cmdstream->println(String("Polling ") + val);
+      }
       // Address a device to talk
       if ( gpib.gpibSendCmd(GC_TAD + val) )  {
 
@@ -669,7 +671,7 @@ void spoll_h(char *params, Controller& controller) {
       // If we successfully read a byte
       if (!r) {
         if (j > 1) {
-          // If all, return specially formatted response: SRQ:addr,status
+          // If several, return specially formatted response: SRQ:addr,status
           // but only when RQS bit set
           if (sb & 0x40) {
             controller.cmdstream->print(String(F("SRQ:")) + val + F(","));
@@ -679,13 +681,7 @@ void spoll_h(char *params, Controller& controller) {
         } else {
           // Return decimal number representing status byte
           controller.cmdstream->println(sb, DEC);
-          if (controller.config.isVerb) {
-            controller.cmdstream->print(F("Received status byte ["));
-            controller.cmdstream->print(sb);
-            controller.cmdstream->print(F("] from device at address: "));
-            controller.cmdstream->println(val);
-          }
-          i = j;
+          i = j; // break?
         }
       } else {
         if (controller.config.isVerb) controller.cmdstream->println(F("Failed to retrieve status byte"));
