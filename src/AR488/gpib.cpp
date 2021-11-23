@@ -950,6 +950,21 @@ void GPIB::mla_h(){
   gpibReceiveData();
 }
 
+/***** Set the SRQ signal *****/
+void GPIB::setSrqSig() {
+  // Set SRQ line to OUTPUT HIGH (asserted)
+  setGpibState(0b01000000, 0b01000000, 1);
+  setGpibState(0b00000000, 0b01000000, 0);
+}
+
+
+/***** Clear the SRQ signal *****/
+void GPIB::clrSrqSig() {
+  // Set SRQ line to INPUT_PULLUP (un-asserted)
+  setGpibState(0b00000000, 0b01000000, 1);
+  setGpibState(0b01000000, 0b01000000, 0);
+}
+
 
 /***** Device is addressed to talk - so send data *****/
 void GPIB::mta_h(){

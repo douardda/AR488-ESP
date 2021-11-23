@@ -177,7 +177,7 @@ void loop() {
 
     // Check status of SRQ and SPOLL if asserted
     if (gpib->isSRQ() && controller->isSrqa) {
-			spoll_h(NULL, *controller);
+			controller->spoll_h(NULL);
       gpib->clearSRQ();
     }
 

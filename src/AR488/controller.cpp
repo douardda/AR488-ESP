@@ -461,7 +461,7 @@ void Controller::execCmd()
   dbSerial->print(F("execCmd: Sent to the command processor: ")); printHex(line, dsize-2);
 #endif
   // Execute the command
-  getCmd(line, *this);
+  getCmd(line);
 
   showPrompt();
 }

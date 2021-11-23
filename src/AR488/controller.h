@@ -2,6 +2,8 @@
 #define SERIALCOMM_H
 
 #include <Arduino.h>
+//#include <ArduinoSTL.h>
+//#include <map>
 #include "AR488.h"
 //#include "gpib.h"
 
@@ -43,6 +45,7 @@ typedef struct {
   char passkey[64]; // same
 #endif
 } AR488Conf;
+
 
 class Controller {
 public:
@@ -111,5 +114,57 @@ public:  // TODO: better than this...
   uint8_t editMacro = 255;      // Macro beinf edited
   bool sendIdn = false;         // Send response to *idn?
 
+  void getCmd(char *);
+  bool notInRange(char*, uint16_t, uint16_t, uint16_t&);
+  void errBadCmd();
+
+  // command handlers
+  void addr_h     (char *);
+  void amode_h    (char *);
+  void clr_h      (char *);
+  void eoi_h      (char *);
+  void eor_h      (char *);
+  void eos_h      (char *);
+  void eot_char_h (char *);
+  void eot_en_h   (char *);
+  void help_h     (char *);
+  void ifc_h      (char *);
+  void llo_h      (char *);
+  void loc_h      (char *);
+  void lon_h      (char *);
+  void cmode_h    (char *);
+  void read_h     (char *);
+  void rtmo_h     (char *);
+  void rst_h      (char *);
+  void save_h     (char *);
+  void spoll_h    (char *);
+  void srq_h      (char *);
+  void stat_h     (char *);
+  void trg_h      (char *);
+  void ver_h      (char *);
+  // non-prologix commands
+  void aspoll_h   (char *);
+  void dcl_h      (char *);
+  void default_h  (char *);
+  void findlstn_h (char *);
+  void id_h       (char *);
+  void idn_h      (char *);
+  void macro_h    (char *);
+  void ppoll_h    (char *);
+  void prompt_h   (char *);
+  void ren_h      (char *);
+  void repeat_h   (char *);
+  void setvstr_h  (char *);
+  void srqa_h     (char *);
+  void tct_h      (char *);
+  void ton_h      (char *);
+  void tmbus_h    (char *);
+  void verb_h     (char *);
+#ifdef AR488_WIFI_ENABLE
+  void wifi_h     (char *);
+#endif
+  void xdiag_h    (char *);
 };
+
+
 #endif

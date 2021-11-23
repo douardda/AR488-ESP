@@ -54,6 +54,9 @@ public:
   void setATN(bool atn);
   void setSRQ(bool srq);
 
+  void setSrqSig();
+  void clrSrqSig();
+
   bool verbose() {return controller.config.isVerb;}
 
 private:
