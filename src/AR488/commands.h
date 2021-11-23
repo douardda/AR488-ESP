@@ -6,7 +6,7 @@
 
 typedef void (Controller::*command_t)(char*);
 /***** Command function record *****/
-struct cmdRec2 {
+struct cmdRec {
   const char* token;
   int opmode;
   command_t handler;

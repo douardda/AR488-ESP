@@ -15,7 +15,7 @@
  * Format: token, mode, function_ptr
  * Mode: 1=device; 2=controller; 3=both;
  */
-static cmdRec2 cmdHidx [] = {
+static cmdRec cmdHidx [] = {
   { "addr",        3, &Controller::addr_h      },
   { "auto",        2, &Controller::amode_h     },
   { "clr",         2, &Controller::clr_h       },
@@ -116,15 +116,12 @@ void Controller::getCmd(char *buffr) {
         dbSerial->print(F("Calling handler with parameters: ")); dbSerial->println(params);
 #endif
         // Call handler with parameters specified
-        //bool (foo::*pfun)() const = methodTable[i].pfun;
-        //(this->*pfun)(); //invoke
         (this->*(cmdHidx[i].handler))(params);
       }else{
         // Call handler without parameters
         (this->*(cmdHidx[i].handler))(NULL);
-        //cmdHidx[i].handler(NULL, controller);
       }
-    }else{
+    } else {
       errBadCmd();
       if (config.isVerb) cmdstream->println(F("Command not available in this mode."));
     }
