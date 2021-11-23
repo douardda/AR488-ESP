@@ -1361,6 +1361,7 @@ void Controller::wifi_h(char *params) {
 }
 #endif
 
+#ifdef HAS_HELP_COMMAND
 static const char cmdHelp[] PROGMEM = {
   "== Prologix compatible command set ==\n"
   "addr: Display/set device address\n"
@@ -1417,9 +1418,11 @@ static const char cmdHelp[] PROGMEM = {
 #endif
   "xdiag: Bus diagnostics (see the doc)\n"
 };
+#endif
 
 /***** Show help message *****/
 void Controller::help_h(char *params) {
+#ifdef HAS_HELP_COMMAND
   char c;
   char token[20];
   int i;
@@ -1453,4 +1456,7 @@ void Controller::help_h(char *params) {
       i = 0;
     }
   }
+#else
+  cmdstream->println(F("help command not supported on this device"));
+#endif
 }
