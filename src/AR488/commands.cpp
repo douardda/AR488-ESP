@@ -40,10 +40,11 @@ static cmdRec cmdHidx [] = {
   { "trg",         2, &Controller::trg_h       },
   { "ver",         3, &Controller::ver_h       },
   // non-prologix commands
-  { "allspoll",    2, &Controller::aspoll_h    },
+  { "allspoll",    2, &Controller::allspoll_h  },
+  { "findrqs",     2, &Controller::findrqs_h   },
+  { "findlstn",    2, &Controller::findlstn_h  },
   { "dcl",         2, &Controller::dcl_h       },
   { "default",     3, &Controller::default_h   },
-  { "findlstn",    2, &Controller::findlstn_h  },
   { "id",          3, &Controller::id_h        },
   { "idn",         3, &Controller::idn_h       },
   { "macro",       2, &Controller::macro_h     },
@@ -317,33 +318,33 @@ void Controller::amode_h(char *params) {
     config.amode = (uint8_t)val;
     if (config.amode < 3) aRead = false;
     if (config.isVerb) {
-	  amode_h(NULL);
-	  if (val > 0) {
-		cmdstream->println(F("WARNING: automode ON can cause some devices to generate"));
-		cmdstream->println(F("         'addressed to talk but nothing to say' errors"));
-	  }
-	}
+    amode_h(NULL);
+    if (val > 0) {
+    cmdstream->println(F("WARNING: automode ON can cause some devices to generate"));
+    cmdstream->println(F("         'addressed to talk but nothing to say' errors"));
+    }
+  }
   } else {
     if (config.isVerb) {
-	  cmdstream->print(String("Auto mode: ") + config.amode + " (");
-	  switch (config.amode) {
-		case 0:
-		  cmdstream->print(F("off"));
-		  break;
-		case 1:
-		  cmdstream->print(F("prologix mode"));
-		  break;
-		case 2:
-		  cmdstream->print(F("on query"));
-		  break;
-		case 3:
-		  cmdstream->print(F("continuous"));
-		  break;
-	  }
-	  cmdstream->println(F(")"));
-	}
-	else
-	  cmdstream->println(config.amode);
+    cmdstream->print(String("Auto mode: ") + config.amode + " (");
+    switch (config.amode) {
+    case 0:
+      cmdstream->print(F("off"));
+      break;
+    case 1:
+      cmdstream->print(F("prologix mode"));
+      break;
+    case 2:
+      cmdstream->print(F("on query"));
+      break;
+    case 3:
+      cmdstream->print(F("continuous"));
+      break;
+    }
+    cmdstream->println(F(")"));
+  }
+  else
+    cmdstream->println(config.amode);
   }
 }
 
@@ -510,9 +511,9 @@ void Controller::trg_h(char *params) {
     cnt++;
   } else {
     // Read address parameters into array
-	for(param=strtok(params, " \t"), cnt=0;
-		(param != NULL) && (cnt < 15);
-		param = strtok(NULL, " \t"), ++cnt) {
+  for(param=strtok(params, " \t"), cnt=0;
+    (param != NULL) && (cnt < 15);
+    param = strtok(NULL, " \t"), ++cnt) {
       if (notInRange(param, 1, 30, val)) return;
       addrs[cnt] = (uint8_t)val;
     }
@@ -525,19 +526,19 @@ void Controller::trg_h(char *params) {
       // Address the device
       if (gpib->addrDev(addrs[i], 0)) {
         if (config.isVerb)
-		  cmdstream->println(String("Failed to address device ") + addrs[i]);
+      cmdstream->println(String("Failed to address device ") + addrs[i]);
         continue;
       }
       // Send GTL
       if (gpib->gpibSendCmd(GC_GET))  {
         if (config.isVerb)
-		  cmdstream->println(String("Failed to send command to device ") + addrs[i]);
+      cmdstream->println(String("Failed to send command to device ") + addrs[i]);
         continue;
       }
       // Unaddress device
       if (gpib->uaddrDev()) {
         if (config.isVerb)
-		  cmdstream->println(String("Failed to unaddress device ") + addrs[i]);
+      cmdstream->println(String("Failed to unaddress device ") + addrs[i]);
         continue;
       }
     }
@@ -546,7 +547,7 @@ void Controller::trg_h(char *params) {
     gpib->setGpibControls(CIDS);
 
     if (config.isVerb)
-	  cmdstream->println(F("Group trigger completed."));
+    cmdstream->println(F("Group trigger completed."));
   }
 }
 
@@ -564,162 +565,6 @@ void Controller::rst_h(char *params) {
 }
 
 
-/***** Serial Poll Handler *****/
-void Controller::spoll_h(char *params) {
-  char *param;
-  uint8_t addrs[15];
-  uint8_t sb = 0;
-  uint8_t r;
-  //  uint8_t i = 0;
-  uint8_t j = 0;
-  uint16_t val = 0;
-  bool all = false;
-  bool eoiDetected = false;
-
-  // Initialise address array
-  for (int i = 0; i < 15; i++) {
-    addrs[i] = 0;
-  }
-
-  // Read parameters
-  if (params == NULL) {
-    // No parameters - trigger addressed device only
-    addrs[0] = config.paddr;
-    j = 1;
-  } else {
-    // Read address parameters into array
-    for (param=strtok(params, " \t"), j=0;
-        (param != NULL) && (j < 15);
-        param = strtok(NULL, " \t"), ++j) {
-      // The 'all' parameter given?
-      if (strncmp(param, "all", 3) == 0) {
-        all = true;
-        j = 30;
-        if (config.isVerb) cmdstream->println(F("Serial poll of all devices requested..."));
-        break;
-        // Read all address parameters
-      } else if ((strlen(params) < 3) && !(notInRange(param, 1, 30, val))) {
-        addrs[j] = (uint8_t)val;
-      } else {
-        errBadCmd();
-        if (config.isVerb) cmdstream->println(F("Invalid parameter"));
-        return;
-      }
-    }
-  }
-  if (config.isVerb)
-    cmdstream->println(String("Got ") + j + " devices to spoll");
-
-  // Send Unlisten [UNL] to all devices
-  if ( gpib->gpibSendCmd(GC_UNL) )  {
-#ifdef DEBUG4
-    dbSerial->println(F("spoll_h: failed to send UNL"));
-#endif
-    return;
-  }
-
-  // Controller addresses itself as listner
-  if ( gpib->gpibSendCmd(GC_LAD + config.caddr) )  {
-#ifdef DEBUG4
-    dbSerial->println(F("spoll_h: failed to send LAD"));
-#endif
-    return;
-  }
-
-  // Send Serial Poll Enable [SPE] to all devices
-  if ( gpib->gpibSendCmd(GC_SPE) )  {
-#ifdef DEBUG4
-    dbSerial->println(F("spoll_h: failed to send SPE"));
-#endif
-    return;
-  }
-
-  // Poll GPIB address or addresses as set by i and j
-  for (int i = 0; i < j; i++) {
-
-    // Set GPIB address in val
-    if (all) {
-      val = i;
-    } else {
-      val = addrs[i];
-    }
-
-    // Don't need to poll own address
-    if (val != config.caddr) {
-      if (config.isVerb) {
-        cmdstream->println(String("Polling ") + val);
-      }
-      // Address a device to talk
-      if ( gpib->gpibSendCmd(GC_TAD + val) )  {
-
-#ifdef DEBUG4
-        dbSerial->println(F("spoll_h: failed to send TAD"));
-#endif
-        return;
-      }
-
-      // Set GPIB control to controller active listner state (ATN unasserted)
-      gpib->setGpibControls(CLAS);
-
-      // Read the response byte (usually device status) using handshake
-      r = gpib->gpibReadByte(&sb, &eoiDetected);
-
-      // If we successfully read a byte
-      if (!r) {
-        if (j > 1) {
-          // If several, return specially formatted response: SRQ:addr,status
-          // but only when RQS bit set
-          if (sb & 0x40) {
-            cmdstream->print(String(F("SRQ:")) + val + F(","));
-            cmdstream->println(sb, DEC);
-            i = j;
-          }
-        } else {
-          // Return decimal number representing status byte
-          cmdstream->println(sb, DEC);
-          i = j; // break?
-        }
-      } else {
-        if (config.isVerb) cmdstream->println(F("Failed to retrieve status byte"));
-      }
-    }
-  }
-  if (all) cmdstream->println();
-
-  // Send Serial Poll Disable [SPD] to all devices
-  if ( gpib->gpibSendCmd(GC_SPD) )  {
-#ifdef DEBUG4
-    dbSerial->println(F("spoll_h: failed to send SPD"));
-#endif
-    return;
-  }
-
-  // Send Untalk [UNT] to all devices
-  if ( gpib->gpibSendCmd(GC_UNT) )  {
-#ifdef DEBUG4
-    dbSerial->println(F("spoll_h: failed to send UNT"));
-#endif
-    return;
-  }
-
-  // Unadress listners [UNL] to all devices
-  if ( gpib->gpibSendCmd(GC_UNL) )  {
-#ifdef DEBUG4
-    dbSerial->println(F("spoll_h: failed to send UNL"));
-#endif
-    return;
-  }
-
-  // Set GPIB control to controller idle state
-  gpib->setGpibControls(CIDS);
-
-  // Set SRQ to status of SRQ line. Should now be unasserted but, if it is
-  // still asserted, then another device may be requesting service so another
-  // serial poll will be called from the main loop
-  gpib->setSRQ(digitalRead(SRQ) == LOW);
-  if (config.isVerb) cmdstream->println(F("Serial poll completed."));
-
-}
 
 
 /***** Return status of SRQ line *****/
@@ -778,16 +623,241 @@ void Controller::lon_h(char *params) {
 /***** CUSTOM COMMAND HANDLERS *****/
 /***********************************/
 
-/***** All serial poll *****/
+
 /*
- * Polls all devices, not just the currently addressed instrument
- * This is an alias wrapper for ++spoll all
+FINDRQS
+BEGIN Find Device Requesting Service
+  Initialize pointer to top of address list
+  Assert ATN TRUE
+  Send IEEE 488.1 UNL remote message
+  Send controller's LAG
+  Send IEEE 488.1 SPE remote message
+  REPEAT
+    Send TAG of address pointed to
+    Set ATN FALSE
+    Handshake a DAB (STB & RQS)
+    Advance pointer
+    Set ATN TRUE
+  UNTIL RQS is true or pointer is past the end of the address list
+  Send IEEE 488.1 SPD remote message
+  Send IEEE 488.1 UNT remote message
+  IF RQS is TRUE
+    THEN
+      return last address sent, last status byte received
+    ELSE
+      return error
+END Find Device Requesting Service
  */
-void Controller::aspoll_h(char *params) {
-  spoll_h((char*)"all");
+
+/*
+ALLSPOLL
+BEGIN Serial Poll All Devices
+  Initialize pointer to top of address list
+  Initialize status byte list
+  Set ATN TRUE
+  Send IEEE 488.1 UNL remote message
+  Send controller's LAG
+  Send IEEE 488.1 SPE remote message
+  WHILE pointer is not past the end of the address list
+    Send TAG of address pointed to
+    Set ATN FALSE
+    Handshake a DAB (STB & RQS)
+    Store the STB & RQS in the status byte list
+    Advance pointer
+    Set ATN TRUE
+  END WHILE
+  Send IEEE 488.1 SPD remote message
+  Send IEEE 488.1 UNT remote message
+END Serial Poll All Devices
+*/
+
+/***** spoll  *****/
+/*
+ * Spoll the current addressed device, or the device at given address if any.
+ *
+ * Display the returned value, if any.
+ */
+void Controller::spoll_h(char *params) {
+  spoll(params, 0);
 }
 
-/***** FINDLSTN 488.2 command *****/
+/***** ALLSPOLL 488.2 common protocol *****/
+/*
+ * Spoll all the devices given as argument
+ *
+ * Display the list of status bytes.
+ */
+void Controller::allspoll_h(char *params) {
+  spoll(params, 1);
+}
+
+/***** FINDRQS 488.2 common protocol *****/
+/*
+ * Look for the device requesting service (typically as a result of a device
+ * addressing the SRQ line).
+ *
+ * Display 'SRQ:<addr>,<statusbyte>' for the first device having
+ * the SRQ bit set.
+ */
+void Controller::findrqs_h(char *params) {
+  spoll(params, 2);
+}
+
+/***** Low level Serial Poll implementation *****/
+void Controller::spoll(char *params, int mode) {
+  // mode: 0=spoll one, 1=allspoll, 2=findsrq
+  char *param;
+  uint8_t addrs[31];
+  uint8_t sb = 0;
+  uint8_t r;
+  //  uint8_t i = 0;
+  uint8_t n_addr = 0;
+  uint16_t val = 0;
+  bool eoiDetected = false;
+
+  // Initialise address array
+  for (int i = 0; i < 31; i++) {
+    addrs[i] = 0;
+  }
+
+  // Read parameters
+  if (params == NULL) {
+    // No parameters - trigger addressed device only
+    addrs[0] = config.paddr;
+    n_addr = 1;
+  } else {
+    // Read address parameters into array
+    for (param=strtok(params, " \t"), n_addr=0;
+        (param != NULL) && (n_addr < 31);
+        param = strtok(NULL, " \t"), ++n_addr) {
+      if ((strlen(params) < 2) && !(notInRange(param, 0, 30, val))) {
+        addrs[n_addr] = (uint8_t)val;
+      } else {
+        errBadCmd();
+        if (config.isVerb) cmdstream->println(F("Invalid parameter"));
+        return;
+      }
+    }
+  }
+  if (mode == 0 && n_addr > 1) {
+    // only addr is supported in default spoll mode; secondary addresses are not yet supported
+    errBadCmd();
+    if (config.isVerb) cmdstream->println(F("Invalid parameter"));
+    return;
+  }
+
+  if (config.isVerb)
+    cmdstream->println(String("Got ") + n_addr + " devices to spoll");
+
+  // Send Unlisten [UNL] to all devices
+  if ( gpib->gpibSendCmd(GC_UNL) )  {
+#ifdef DEBUG4
+    dbSerial->println(F("spoll: failed to send UNL"));
+#endif
+    return;
+  }
+
+  // Controller addresses itself as listner
+  if ( gpib->gpibSendCmd(GC_LAD + config.caddr) )  {
+#ifdef DEBUG4
+    dbSerial->println(F("spoll: failed to send LAD"));
+#endif
+    return;
+  }
+
+  // Send Serial Poll Enable [SPE] to all devices
+  if ( gpib->gpibSendCmd(GC_SPE) )  {
+#ifdef DEBUG4
+    dbSerial->println(F("spoll: failed to send SPE"));
+#endif
+    return;
+  }
+
+  // Poll GPIB address or addresses as set by i and j
+  for (int i=0; i < n_addr; i++) {
+
+    // Set GPIB address in val
+    val = addrs[i];
+
+    // Don't need to poll own address
+    if (val != config.caddr) {
+      if (config.isVerb) {
+        cmdstream->println(String("Polling ") + val);
+      }
+      // Address a device to talk
+      if ( gpib->gpibSendCmd(GC_TAD + val) )  {
+
+#ifdef DEBUG4
+        dbSerial->println(F("spoll: failed to send TAD"));
+#endif
+        return;
+      }
+
+      // Set GPIB control to controller active listner state (ATN unasserted)
+      gpib->setGpibControls(CLAS);
+
+      // Read the response byte (usually device status) using handshake
+      r = gpib->gpibReadByte(&sb, &eoiDetected);
+
+      // If we successfully read a byte
+      if (!r) {
+        if (mode == 2) {
+          // If in FINDRQS mode, return specially formatted response: SRQ:addr,status
+          // but only when RQS bit set
+          if (sb & 0x40) {
+            cmdstream->print(String(F("SRQ:")) + val + F(","));
+            cmdstream->print(sb, DEC);
+            break;
+          }
+        } else if (mode == 1) {
+          // ALLSPOLL mode, return a specially formatted response: 'addr:status '
+          cmdstream->print(String(val) + F(":") + sb + " ");
+        } else {
+          // SPOLL mode
+          // Return decimal number representing status byte
+          cmdstream->print(sb, DEC);
+        }
+      }
+    }
+  }
+  cmdstream->println();
+
+  // Send Serial Poll Disable [SPD] to all devices
+  if ( gpib->gpibSendCmd(GC_SPD) )  {
+#ifdef DEBUG4
+    dbSerial->println(F("spoll: failed to send SPD"));
+#endif
+    return;
+  }
+
+  // Send Untalk [UNT] to all devices
+  if ( gpib->gpibSendCmd(GC_UNT) )  {
+#ifdef DEBUG4
+    dbSerial->println(F("spoll: failed to send UNT"));
+#endif
+    return;
+  }
+
+  // Unadress listners [UNL] to all devices
+  if ( gpib->gpibSendCmd(GC_UNL) )  {
+#ifdef DEBUG4
+    dbSerial->println(F("spoll: failed to send UNL"));
+#endif
+    return;
+  }
+
+  // Set GPIB control to controller idle state
+  gpib->setGpibControls(CIDS);
+
+  // Set SRQ to status of SRQ line. Should now be unasserted but, if it is
+  // still asserted, then another device may be requesting service so another
+  // serial poll will be called from the main loop
+  gpib->setSRQ(digitalRead(SRQ) == LOW);
+  if (config.isVerb) cmdstream->println(F("Serial poll completed."));
+
+}
+
+/***** FINDLSTN 488.2 common protocol *****/
 /*
  * Looks for listeners on the bus
  * Does only look for primary addresses for now
@@ -1386,7 +1456,7 @@ static const char cmdHelp[] PROGMEM = {
   "ver: Display firmware version\n"
   // additional commands
   "== Extension command set ==\n"
-  "aspoll: Serial poll all instruments (alias: ++spoll all)\n"
+  "allspoll: Serial poll all instruments (alias: ++spoll all)\n"
   "dcl: Send unaddressed (all) device clear  [power on reset] (is the rst?)\n"
   "default: Set configuration to controller default settings\n"
   "id name: Show/Set the name of the interface\n"
@@ -1425,7 +1495,7 @@ void Controller::help_h(char *params) {
   int i;
 
   i = 0;
-  for (int k = 0; k < strlen_P(cmdHelp); k++) {
+  for (unsigned int k = 0; k < strlen_P(cmdHelp); k++) {
     c = pgm_read_byte_near(cmdHelp + k);
 	if ((params == NULL) && (i==0) && (c == '='))
 	  // a "title" line, print it (if no params)

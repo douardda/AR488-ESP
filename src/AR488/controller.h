@@ -117,6 +117,7 @@ public:  // TODO: better than this...
   void getCmd(char *);
   bool notInRange(char*, uint16_t, uint16_t, uint16_t&);
   void errBadCmd();
+  void spoll    (char *, int mode);
 
   // command handlers
   void addr_h     (char *);
@@ -143,10 +144,13 @@ public:  // TODO: better than this...
   void trg_h      (char *);
   void ver_h      (char *);
   // non-prologix commands
-  void aspoll_h   (char *);
+  // IEE488.2 standard commands
+  void allspoll_h (char *);
+  void findlstn_h (char *);
+  void findrqs_h  (char *);
+  // other commands
   void dcl_h      (char *);
   void default_h  (char *);
-  void findlstn_h (char *);
   void id_h       (char *);
   void idn_h      (char *);
   void macro_h    (char *);
