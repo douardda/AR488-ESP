@@ -681,9 +681,31 @@ bool GPIB::Wait_on_pin_state(uint8_t state, uint8_t pin, int interval) {
 /*
  * state is a predefined state (CINI, CIDS, CCMS, CLAS, CTAS, DINI, DIDS, DLAS, DTAS);
  * Bits control lines as follows: 8-ATN, 7-SRQ, 6-REN, 5-EOI, 4-DAV, 3-NRFD, 2-NDAC, 1-IFC
- * setGpibState byte1 (databits) : State - 0=LOW, 1=HIGH/INPUT_PULLUP; Direction - 0=input, 1=output;
+ *                                `---- BUS-mgmt (SC) ------' `--- Data tr (TE) --'  `BUS'
+ * setGpibState byte1 (databits) : State: 0=LOW, 1=HIGH/INPUT_PULLUP; Direction: 0=input, 1=output;
  * setGpibState byte2 (mask)     : 0=unaffected, 1=enabled
  * setGpibState byte3 (mode)     : 0=set pin state, 1=set pin direction
+ */
+
+/*** SN75162 table   ***
+ * Note: for SN75161, consider SC=!DC
+ * +--------------------++-----------------------------+-------------------+
+ * | CONTROLS           || BUS-MANAGEMENT CHANNELS     | DATA-TR  CHANNELS |
+ * +----+----+----+-----++-----+-----+-----+-----+-----+-----+------+------+
+ * | SC | DC | TE | ATN || ATN | SRQ | REN | IFC | EOI | DAV | NDAC | NRFD |
+ * |    |    |    |     || Ctrl by DC| Ctrl by SC|     |   Ctrl by TE      |
+ * +----+----+----+-----++-----+-----+-----------+-----+-----+------+------+
+ * |    | H  | H  |  H  ||  R  |  T  |           |  T  |  T  |  R   |  R   |
+ * |    | H  | H  |  L  ||  R  |  T  |           |  R  |  T  |  R   |  R   |
+ * |    | L  | L  |  H  ||  T  |  R  |           |  R  |  R  |  T   |  T   |
+ * |    | L  | L  |  L  ||  T  |  R  |           |  T  |  R  |  T   |  T   |
+ * |    | H  | L  |  X  ||  R  |  T  |           |  R  |  R  |  T   |  T   |
+ * |    | L  | H  |  X  ||  T  |  R  |           |  T  |  T  |  R   |  R   |
+ * +----+---------------++-----------+-----+-----+-----+-----+------+------+
+ * | H  |               ||           |  T  |  T  |                         |
+ * | L  |               ||           |  R  |  R  |                         |
+ * +----+---------------++-----------+-----+-----+-------------------------+
+ * H:high, L: low, T: transmit, R: receive, X: don't care
  */
 void GPIB::setGpibControls(uint8_t state) {
 
@@ -692,9 +714,14 @@ void GPIB::setGpibControls(uint8_t state) {
     // Controller states
 
     case CINI:  // Initialisation
-      // Set pin direction
+      /* +-------------------------------------------------+
+       * | ATN | SRQ | REN | IFC | EOI | DAV | NDAC | NRFD |
+       * | OUT | IN  | OUT | IN  | OUT | OUT |  IN  |  IN  |
+       * |  H  | PU  |  L  | PU  |  H  |  H  |  PU  |  PU  | 
+       * +-------------------------------------------------+ */
+      // Set pin direction; ATN:O SRQ:I REN:O EOI:O DAV:O NRFD:I NDAC:I IFC:I
       setGpibState(0b10111000, 0b11111111, 1);
-      // Set pin state
+      // Set pin state; ATN:H SRQ:PU REN:L EOI:H DAV:H NRFD:PU NDAC:PU IFC:PU
       setGpibState(0b11011111, 0b11111111, 0);
 #ifdef SN7516X
       digitalWrite(SN7516X_TE,LOW);
@@ -711,6 +738,12 @@ void GPIB::setGpibControls(uint8_t state) {
       break;
 
     case CIDS:  // Controller idle state
+      /* +-------------------------------------------------+
+       * | ATN | SRQ | REN | IFC | EOI | DAV | NDAC | NRFD |
+       * | OUT |  -  |  -  |  -  | OUT | OUT |  IN  |  IN  |
+       * |  H  |  -  |  -  |  -  |  H  |  H  |  PU  |  PU  | 
+       * +-------------------------------------------------+ */
+      // ATN SRQ REN EOI DAV NRFD NDAC IFC
       setGpibState(0b10111000, 0b10011110, 1);
       setGpibState(0b11011111, 0b10011110, 0);
 #ifdef SN7516X
@@ -722,6 +755,12 @@ void GPIB::setGpibControls(uint8_t state) {
       break;
 
     case CCMS:  // Controller active - send commands
+      /* +-------------------------------------------------+
+       * | ATN | SRQ | REN | IFC | EOI | DAV | NDAC | NRFD |
+       * | OUT |  -  |  -  | OUT | OUT | OUT |  IN  |  IN  |
+       * |  L  |  -  |  -  |  H  |  H  |  H  |  PU  |  PU  | 
+       * +-------------------------------------------------+ */
+      // ATN SRQ REN EOI DAV NRFD NDAC IFC
       setGpibState(0b10111001, 0b10011111, 1);
       setGpibState(0b01011111, 0b10011111, 0);
 #ifdef SN7516X
@@ -733,7 +772,12 @@ void GPIB::setGpibControls(uint8_t state) {
       break;
 
     case CLAS:  // Controller - read data bus
-      // Set state for receiving data
+      /* +-------------------------------------------------+
+       * | ATN | SRQ | REN | IFC | EOI | DAV | NDAC | NRFD |
+       * | OUT |  -  |  -  |  -  | IN  |  IN | OUT  | OUT  |
+       * |  H  |  -  |  -  |  -  | PU  |  PU |  L   |  L   | 
+       * +-------------------------------------------------+ */
+      // ATN SRQ REN EOI DAV NRFD NDAC IFC
       setGpibState(0b10100110, 0b10011110, 1);
       setGpibState(0b11011000, 0b10011110, 0);
 #ifdef SN7516X
@@ -745,6 +789,12 @@ void GPIB::setGpibControls(uint8_t state) {
       break;
 
     case CTAS:  // Controller - write data bus
+      /* +-------------------------------------------------+
+       * | ATN | SRQ | REN | IFC | EOI | DAV | NDAC | NRFD |
+       * | OUT |  -  |  -  |  -  | OUT | OUT |  IN  |  IN  |
+       * |  H  |  -  |  -  |  -  |  H  |  H  |  PU  |  PU  | 
+       * +-------------------------------------------------+ */
+      // ATN SRQ REN EOI DAV NRFD NDAC IFC
       setGpibState(0b10111001, 0b10011110, 1);
       setGpibState(0b11011111, 0b10011110, 0);
 #ifdef SN7516X
