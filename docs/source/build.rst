@@ -1,3 +1,5 @@
+.. _Building an AR488 GPIB Interface:
+
 Building an AR488 GPIB Interface
 ================================
 

@@ -9,11 +9,11 @@ AR488 GPIB Controller
 The AR488 GPIB controller is an Arduino-based controller for interfacing with `IEEE488
 GPIB <https://en.wikipedia.org/wiki/IEEE-488>`_ devices.
 
-The code support AVR based arduino boards and has been tested on Arduino_ Uno_, Nano_,
+The code supports AVR based arduino boards and has been tested on Arduino_ Uno_, Nano_,
 `Mega 2560`_, `Micro 32U4`_ boards and provides a low cost alternative to other
 commercial interfaces.
 
-It also support ESP32_ boards and has been tested on several `ESP32 and ESP32S2
+It also supports ESP32_ boards and has been tested on several `ESP32 and ESP32S2
 devkits`_. These boards come with support for wifi connection and serial over Bluetooth
 (not supported on ESP32S2.)
 
@@ -49,36 +49,23 @@ section.
 
 
 
-Installation
-------------
+Driver Installation
+-------------------
 
-Windows 7 and Windows 10 will automatically recognize the FTDI and CH340G chipsets used by
-Arduino boards and automatically install the drivers from Windows Update.
-
-The official source for FTDI drivers is here:
-
-  https://www.ftdichip.com/FTDrivers.htm
-
-
-The VCP driver provides a virtual COM port for communication while the D2XX (direct)
-driver allows direct access via a DLL interface.
-
-The official CH340G driver source is here:
-
-  http://www.wch.cn/download/CH341SER_EXE.html
-
-Linux Mint appears to automatically recognize both chipsets as well. Since Linux Mint is
-based on Ubuntu, it is expected that Ubuntu should also automatically recognize both
-chipsets.
+Most recent OS (Windows, Linux and MacOS) will recognize the serial chipsets used by the
+boards listed above, so no special driver installation is required.
 
 
 Firmware Upgrades
 -----------------
 
-The firmware is upgradeable via the Arduino IDE or platformio_ `command line tool`_ in
-the usual manner, however an AVR programmer can also be used to upload the firmware to
-the Arduino microcontroller. Pre-compiled firmwares for some boards are available from
-https://github.com/Twilight-Logic/AR488
+The firmware is upgradeable via the Arduino IDE or the platformio_ `command line tool`_
+in the usual manner, however an AVR programmer can also be used to upload the firmware
+to the Arduino microcontroller. Pre-compiled firmwares for some boards are available
+from https://github.com/Twilight-Logic/AR488
+
+.. _platformio: https://platformio.org
+.. _`command line tool`: https://docs.platformio.org/en/latest/core/index.html
 
 
 Client Software
@@ -93,15 +80,16 @@ The interface can be accessed via a number of software client programs:
 - Python scripts
 - Anything else that can use the Prologix syntax!
 
-Terminal clients connect via a virtual COM port and should be set to 115200 baud, no
-parity, 8 data bits and 1 stop bit when connecting to the interface. On Linux, the port
-will be a TTY device such as ``/dev/ttyUSB0`` or ``/dev/ttyACM0``.
+When using direct USB-based serial connection, terminal clients can connect via a
+virtual COM port and should be set to 115200 baud, no parity, 8 data bits and 1 stop bit
+when connecting to the interface. On Linux, the port will be a TTY device such as
+``/dev/ttyUSB0`` or ``/dev/ttyACM0``.
+
+For using Bluetooth or Wifi to connect to the AR488, please refer to the :ref:`Remote
+Connection` section.
 
 Specific considerations apply when using an Arduino based interface with EZGPIB and the
 KE5FX toolkit. These are described in the :ref:`EZGPIB` section.
-
-For using Bluetooth or Wifi to connect to the AR488, please refer to the
-:ref:`Remote Connection` section.
 
 
 Operating Modes
@@ -113,14 +101,15 @@ Controller mode
 +++++++++++++++
 
 In this mode the interface can control and read data from various instruments including
-Digital multimeters (DMMs). oscilloscopes, signal generators and spectrum analyzers.
-When powered on, the controller and sends out an IFC (Interface Clear) to the GPIB bus
-to indicate that it is now the Controller-in-Charge (CIC).
+Digital multimeters (DMMs), oscilloscopes, signal generators and spectrum analyzers.
+When powered on, the controller sends out an IFC (Interface Clear) to the GPIB bus to
+indicate that it is now the Controller-in-Charge (CIC).
 
-All commands are preceded with the ``++`` sequence and terminated with a carriage return
-(CR), newline [a.k.a. linefeed] (LF) or both (CRLF). Commands are sent to or affect the
-currently addressed instrument which can be specified with the ``++addr`` command (see
-command ``help`` for more information).
+All AR488/Prologix specific commands are preceded with the ``++`` sequence and
+terminated with a carriage return (CR), linefeed (LF) or both (CRLF). Commands are sent
+to or affect the currently addressed instrument which can be specified with the
+``++addr`` command (see command :ref:`++help` for more information).
+
 
 By default, the controller is at GPIB address 0.
 

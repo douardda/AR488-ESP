@@ -198,7 +198,20 @@ AR488 to automatically connect to the wifi, add the `++wifi connect` command in 
 `Macro 0` (see :ref:`macros` for more details).
 
 Serial over IP
-++++++++++++++
+==============
+
+Using raw socket
+----------------
+
+If the AR488 is connected to the wifi, you test the connection using directly `pio
+device monitor`:
+
+.. code-block:: bash
+
+   $ pio device monitor --echo -p socket://192.168.2.151:23
+
+Using raw socket from a linux machine
+-------------------------------------
 
 Use `ser2net` on the remote machine side:
 
@@ -211,3 +224,16 @@ Use `socat` on the user side:
 .. code-block:: bash
 
    $ socat pty,link=$HOME/tty,waitslave tcp:<REMOTE.MACHINE>:3333
+
+Using RFC2217
+-------------
+
+.. code-block:: bash
+
+   $ ser2net -n -C '3333:telnet:0:/dev/ttyUSB0:115200 8DATABITS NONE 1STOPBIT remctl'
+
+and
+
+.. code-block:: bash
+
+   $ pio device monitor --echo -p rfc2217://beaglebone.lan:3333?ign_set_control -b 115200
