@@ -727,29 +727,62 @@ uint8_t ctrlbus[8] = { IFC, NDAC, NRFD, DAV, EOI, REN, SRQ, ATN };
 
 /***** Read the status of the GPIB data bus wires and collect the byte of data *****/
 void readyGpibDbus() {
-  uint8_t db = 0;
-  for (uint8_t i=0; i<8; i++){
-    pinMode(databus[i], INPUT_PULLUP);
-  }
+  //for (uint8_t i=0; i<8; i++){
+  //  pinMode(databus[i], INPUT_PULLUP);
+  //}
+  pinMode(databus[0], INPUT_PULLUP);
+  pinMode(databus[1], INPUT_PULLUP);
+  pinMode(databus[2], INPUT_PULLUP);
+  pinMode(databus[3], INPUT_PULLUP);
+  pinMode(databus[4], INPUT_PULLUP);
+  pinMode(databus[5], INPUT_PULLUP);
+  pinMode(databus[6], INPUT_PULLUP);
+  pinMode(databus[7], INPUT_PULLUP);
+  
 }
 
 uint8_t readGpibDbus() {
+  /*
   uint8_t db = 0;
   for (uint8_t i=0; i<8; i++){
     db = db + (digitalRead(databus[i]) ? 0 : 1<<i );
   }
   return db;
+  */
+  return (digitalRead(databus[0]) ? 0 : 1<<0) + \
+         (digitalRead(databus[1]) ? 0 : 1<<1) + \
+         (digitalRead(databus[2]) ? 0 : 1<<2) + \
+         (digitalRead(databus[3]) ? 0 : 1<<3) + \
+         (digitalRead(databus[4]) ? 0 : 1<<4) + \
+         (digitalRead(databus[5]) ? 0 : 1<<5) + \
+         (digitalRead(databus[6]) ? 0 : 1<<6) + \
+         (digitalRead(databus[7]) ? 0 : 1<<7);
 }
-
 
 /***** Set the status of the GPIB data bus wires with a byte of datacd ~/test *****/
 void setGpibDbus(uint8_t db) {
-
+/*
   for (uint8_t i=0; i<8; i++){
     pinMode(databus[i], OUTPUT);
     digitalWrite(databus[i], ((db&(1<<i)) ? LOW : HIGH) );
   }
-
+  */
+  pinMode(databus[0], OUTPUT);
+  pinMode(databus[1], OUTPUT);
+  pinMode(databus[2], OUTPUT);
+  pinMode(databus[3], OUTPUT);
+  pinMode(databus[4], OUTPUT);
+  pinMode(databus[5], OUTPUT);
+  pinMode(databus[6], OUTPUT);
+  pinMode(databus[7], OUTPUT);
+  digitalWrite(databus[0], ((db&(1<<0)) ? LOW : HIGH));
+  digitalWrite(databus[1], ((db&(1<<1)) ? LOW : HIGH));
+  digitalWrite(databus[2], ((db&(1<<2)) ? LOW : HIGH));
+  digitalWrite(databus[3], ((db&(1<<3)) ? LOW : HIGH));
+  digitalWrite(databus[4], ((db&(1<<4)) ? LOW : HIGH));
+  digitalWrite(databus[5], ((db&(1<<5)) ? LOW : HIGH));
+  digitalWrite(databus[6], ((db&(1<<6)) ? LOW : HIGH));
+  digitalWrite(databus[7], ((db&(1<<7)) ? LOW : HIGH));
 }
 
 /***** Set the direction and state of the GPIB control lines ****/
