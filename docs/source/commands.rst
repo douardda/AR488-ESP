@@ -136,6 +136,9 @@ to the ASCII character code of the current character.
 :Syntax: ``++eot_char [<char>]``
 		 where <char> is a decimal number that is less than 256.
 
+
+.. _++help:
+
 ``++help``
 ++++++++++
 

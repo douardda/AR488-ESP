@@ -226,7 +226,7 @@ out and not used.
 
 The section in AR488_Config.h looks as follows:
 
-.. code-block::
+.. code-block:: c++
 
    #ifdef __AVR__
      // For supported boards use interrupt handlers

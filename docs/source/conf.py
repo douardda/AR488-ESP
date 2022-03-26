@@ -18,7 +18,7 @@
 # -- Project information -----------------------------------------------------
 
 project = 'AR488'
-copyright = '2021, Twilight-Logic'
+copyright = '2021, Twilight-Logic, 2022 David Douard'
 author = 'Twilight-Logic'
 
 # The full version, including alpha/beta/rc tags
@@ -26,6 +26,8 @@ release = '0.49.14'
 
 
 # -- General configuration ---------------------------------------------------
+
+master_doc = 'index'
 
 # Add any Sphinx extension module names here, as strings. They can be
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
