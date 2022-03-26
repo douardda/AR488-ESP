@@ -1,34 +1,97 @@
-# AR488 Arduino GPIB Interface
+# ESP32-488 ESP32/Arduino based GPIB Interface
 
 
-The AR488 GPIB controller is an Arduino-based controller for interfacing with IEEE488 GPIB devices via USB. This work was inspired by and has been based on the work originally released by Emanuele Girlando and has been released with his permission.
+The ESP32-488 GPIB controller is an
+[ESP32-based](https://www.espressif.com/en/products/socs/esp32) controller for
+interfacing with IEEE488 GPIB devices via USB using the Arduino developement
+environment. This project is afriendly fork from the
+[AR488](https://github.com/Twilight-Logic/AR488) project aiming at supporting the ESP32
+family platform and improving the source code of the firmware. The original AR488 itself
+was inspired by and has been based on the work originally released by Emanuele Girlando.
 
-This sketch represents a rewrite of that work and implements the full set of Prologix ++ commands in both controller and device mode, with the exception of ++help. Secondary GPIB addressing is not yet supported. A number of additional features are provided, for example, a macro feature is provided to allow automation of frequently used command sequences was well as controller and instrument initialisation at startup. As of version 0.48.x, interfacing with SN75160 and SN75161 GPIB transceiver integrated circuits is supported.
+This sketch represents a major refactoring of the orignal AR488 source code.
 
-To build an interface, at least one Arduino board will be required to act as the interface hardware. Arduinos provide a low cost alternative to other commercial interfaces. Currently the following boards are supported:
+It implements the full set of Prologix ++ commands in both controller and device mode.
+Secondary GPIB addressing is not yet supported. A number of additional features are
+provided, for example, a macro feature is provided to allow automation of frequently
+used command sequences was well as controller and instrument initialisation at startup.
+Interfacing with SN75160 and SN75161 GPIB transceiver integrated circuits is supported.
 
-<table>
-<tr><td><i>MCU</i></td><td><i>Board</i></td><td><i>Serial Ports</i></td><td><i>Layouts</i></td></tr>
-<tr><td>328p</td><td>Uno R3</td><td>Single UART shared with USB</td><td>Layout as per original project by Emanuelle Girlando</td></tr>
-<tr><td>328p</td><td>Nano</td><td>USB/Single UART shared with USB</td><td>Identical to Uno</td></tr>
-<tr><td>32u4</td><td>Micro</td><td>USB/CDC+1 UART</td><td>Compact layout by Artag, designed for his back-of-IEEE488-plug adapter board</td></tr>
-<tr><td>32u4</td><td>Leonardo R3</td><td>USB/CDC+1 UART</td><td>Identical to UNO</td></tr>
-<tr><td>2560</td><td>Mega 2560</td><td>4 x UART, Serial0 shared with USB</td><td>D - (default) using pins on either side of board<br>E1 - using the first row of end connector<br>E2 - using the second row of end connector</td></tr>
-</table>
+While targeting the ESP32 platform, this firmware reamains compatible with standard
+Arduino boards. However, some features are not supported on old boards, and 328p based
+boards should not be considered as they are very limited in flash and RAM space.
 
-Uno and Nano boards are both based around the ATmega328p micro-controller and have similar pin-out and features. Only two pins (6 & 13) remain spare as the remainder are all used to interface with the GPIB bus. The Micro and Leonardo are based around the ATmega32u4 micro-controller. On the Micro, all GPIO pins are used so none remain spare. The Leonardo R3 uses the same layout as the Uno leaving the same two pins (6 & 13) spare. The Mega 2560 costs slightly more but has a design and layout that includes considerably more control pins, additional serial ports and a more powerful ATmega2560 MCU. It therefore provides greater flexibility and potential for further expansion. Currently, 3 layouts are provided for the AtMega2650 using either the lower numbered pins on the sides of the board (<D>efault), the first row of pins of the two row header at the end of the board (E1), or the second row of the same header (E2). This provides some flexibility and allows various displays and other devices to be connected if desired. Please be aware that when using the <D>efault layout, pins 16 and 17 that correspond to TXD2 and RXD2 (Serial2) cannot be used for serial communication as they are used to drive GPIB signals, however serial ports 0, 1 and 3 remain available for use. Layouts E1 and E2 do not have the same restriction.
+To build an interface, at least one Arduino board will be required to act as the
+interface hardware. Arduinos provide a low cost alternative to other commercial
+interfaces. Currently the following boards are supported:
 
-Including the SN7516x chipset into the interface design will naturally add to the cost, but has the advantage of providing the full 48mA drive current capacity regardless of the capability of the Arduino board being used, as well as providing proper tri-state output with Hi-Z when the board is powered down. The latter isolates the Arduino micro-controller from the GPIB bus when the interface is powered down, preventing GPIB bus communication problems due to 'parasitic power' from signals present on the GPIB bus, thereby allowing the interface to be safely powered down while not in use. Construction will involve adding a daughter-board between the Arduino GPIO pins and the GPIB bus. This could be constructed using prototyping board or shield, or custom designed using KiCad or other PCB layout design software.
+| MCU  | Board | Serial Ports | Layouts |
+| ---- | ----- | ------------ | ------- |
+| ESP32 | Any  | UART over USB, Bluetooth, Wifi | configurable |
+| ESP32S2 | Any  | UART over USB, Wifi | configurable |
+| 328p | Uno R3 |Single UART shared with USB | Layout as per original project by Emanuelle Girlando |
+| 328p | Nano | USB/Single UART shared with USB | Identical to Uno |
+| 32u4 | Micro | USB/CDC+1 UART | Compact layout by Artag, designed for his back-of-IEEE488-plug adapter board< |
+| 32u4 | Leonardo R3 | USSB/CDC+1 UART | Identical to UNO |
+| 2560 | Mega 2560 | 4 x UART, Serial0 shared with USB | D - (default) using pins on either side of board<br>E1 - using the first row of end connector<br>E2 - using the second row of end connector</td></tr>
 
-To use the sketch, create a new directory, and then unpack the .zip file into this location. Open the main sketch, AR488.ino, in the Arduino IDE. This should also load all of the linked .h and .cpp files. Review Config.h and make any configuration adjustment required (see the 'Configuration' section of the AR488 manual for details), including the selcetion of the board layout selection appropriate to the Arduino board that you are using. Set the target board in Board Manager within the Arduino IDE (Tools => Board:), and then compile and upload the sketch. There should be no need to make any changes to any other files. Once uploaded, the firmware should respond to the ++ver command with its version information.
+Generally speaking, any ESP32 based board should work. When choosing a layout, pay
+attention to pins which hae special purpose on the ESP32 as well as pins that are inputs
+only.
 
-Please note that Arduino Micro (and other 32u4 boards, e.g. Leonardo) do not automatically reset when a connection is made to the serial port. The Arduino IDE takes care of the programming process via USB which should work normally. Some Micro boards may not have a reset button, in which case the reset pin need to be briefly shorted to ground by some other means. When using the Arduino IDE on Linux (Linux Mint and possibly other Ubuntu derivatives), the modemmanager service must be disabled, otherwise it will interfere with the programming process and the boards will be rendered inaccessible via USB. If this curers, then the board can be returned to normal working by uploading a bootloader to it using an AVR programmer. This issue does not seem to affect Uno, Nano or Mega 2560 boards.
+Including the SN7516x chipset into the interface design will naturally add to the cost,
+but has the advantage of providing the full 48mA drive current capacity regardless of
+the capability of the board being used, as well as providing proper tri-state
+output with Hi-Z when the board is powered down. The latter isolates the Arduino
+micro-controller from the GPIB bus when the interface is powered down, preventing GPIB
+bus communication problems due to 'parasitic power' from signals present on the GPIB
+bus, thereby allowing the interface to be safely powered down while not in use.
 
-Unless some form of shield or custom design with integral IEEE488 connector is used, connecting to an instrument will require a 16 core cable and a suitable IEEE488 connector. This can be salvaged from an old GPIB cable or purchased from various electronics parts suppliers. Searching for a 'centronics 24-way connector' sometimes yields better results than searching for 'IEEE 488 connector' or 'GPIB connector'. Details of interface construction and the mapping of Arduino pins to GPIB control signals and data bus are explained in the "Building an AR488 GPIB Interface" section of the <a href="https://github.com/Twilight-Logic/AR488/blob/master/AR488-manual.pdf">AR488 Manual</a>.
- 
-Commands generally adhere closely to the Prologix syntax, however there are some minor differences, additions and enhancements. For example, due to issues with longevity of the Arduino EEPROM memory, the ++savecfg command has been implemented differently to save EEPROM wear. Some commands have been enhanced with additional options and a number of new custom commands have been added to provide new features that are not found in the standard Prologix implementation. Details of all commands and features can be found in the Command Reference section of the <a href="https://github.com/Twilight-Logic/AR488/blob/master/AR488-manual.pdf">AR488 Manual</a>.
+An example design for this configuration is [provided here]()
 
-Once uploaded, the firmware should respond to the ++ver command with its version information.
+To use the sketch, create a new directory, and then unpack the .zip file into this
+location. Open the main sketch, AR488.ino, in the Arduino IDE. This should also load all
+of the linked .h and .cpp files. Review Config.h and make any configuration adjustment
+required (see the 'Configuration' section of the AR488 manual for details), including
+the selcetion of the board layout selection appropriate to the Arduino board that you
+are using. Set the target board in Board Manager within the Arduino IDE (Tools =>
+Board:), and then compile and upload the sketch. There should be no need to make any
+changes to any other files. Once uploaded, the firmware should respond to the ++ver
+command with its version information.
+
+Please note that Arduino Micro (and other 32u4 boards, e.g. Leonardo) do not
+automatically reset when a connection is made to the serial port. The Arduino IDE takes
+care of the programming process via USB which should work normally. Some Micro boards
+may not have a reset button, in which case the reset pin need to be briefly shorted to
+ground by some other means. When using the Arduino IDE on Linux (Linux Mint and possibly
+other Ubuntu derivatives), the modemmanager service must be disabled, otherwise it will
+interfere with the programming process and the boards will be rendered inaccessible via
+USB. If this curers, then the board can be returned to normal working by uploading a
+bootloader to it using an AVR programmer. This issue does not seem to affect Uno, Nano
+or Mega 2560 boards.
+
+Unless some form of shield or custom design with integral IEEE488 connector is used,
+connecting to an instrument will require a 16 core cable and a suitable IEEE488
+connector. This can be salvaged from an old GPIB cable or purchased from various
+electronics parts suppliers. Searching for a 'centronics 24-way connector' sometimes
+yields better results than searching for 'IEEE 488 connector' or 'GPIB connector'.
+Details of interface construction and the mapping of Arduino pins to GPIB control
+signals and data bus are explained in the "Building an AR488 GPIB Interface" section of
+the <a href="https://github.com/Twilight-Logic/AR488/blob/master/AR488-manual.pdf">AR488
+Manual</a>.
+
+Commands generally adhere closely to the Prologix syntax, however there are some minor
+differences, additions and enhancements. For example, due to issues with longevity of
+the Arduino EEPROM memory, the ++savecfg command has been implemented differently to
+save EEPROM wear. Some commands have been enhanced with additional options and a number
+of new custom commands have been added to provide new features that are not found in the
+standard Prologix implementation. Details of all commands and features can be found in
+the Command Reference section of the <a
+href="https://github.com/Twilight-Logic/AR488/blob/master/AR488-manual.pdf">AR488
+Manual</a>.
+
+Once uploaded, the firmware should respond to the ++ver command with its version
+information.
 
 <b><i>Wireless Communication:</i></b>
 
@@ -63,4 +126,3 @@ Also, thank you to all the contributors to the AR488 EEVblog thread for their su
 
 The original work by Emanuele Girlando is found here:<BR>
 http://egirland.blogspot.com/2014/03/arduino-uno-as-usb-to-gpib-controller.html
-
