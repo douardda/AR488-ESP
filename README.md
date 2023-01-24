@@ -31,9 +31,11 @@ interfaces. Currently the following boards are supported:
 | ESP32S2 | Any  | UART over USB, Wifi | configurable |
 | 328p | Uno R3 |Single UART shared with USB | Layout as per original project by Emanuelle Girlando |
 | 328p | Nano | USB/Single UART shared with USB | Identical to Uno |
-| 32u4 | Micro | USB/CDC+1 UART | Compact layout by Artag, designed for his back-of-IEEE488-plug adapter board< |
+| 32u4 | Micro | USB/CDC+1 UART | Compact layout by Artag, designed for his back-of-IEEE488-plug adapter board |
 | 32u4 | Leonardo R3 | USSB/CDC+1 UART | Identical to UNO |
-| 2560 | Mega 2560 | 4 x UART, Serial0 shared with USB | D - (default) using pins on either side of board<br>E1 - using the first row of end connector<br>E2 - using the second row of end connector</td></tr>
+| 2560 | Mega 2560 | 4 x UART, Serial0 shared with USB | D - (default) using pins on either side of board\
+E1 - using the first row of end connector\
+E2 - using the second row of end connector |
 
 Generally speaking, any ESP32 based board should work. When choosing a layout, pay
 attention to pins which hae special purpose on the ESP32 as well as pins that are inputs
