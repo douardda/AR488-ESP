@@ -1,415 +1,153 @@
-.. _Configuration:
+.. _Compilation
+
+Compilation
+===========
+
+The recommended tool to compile and upload the AR488-ESP32 firmware is
+`platformio`_ either using the VSCode based IDE or using direcly the `command
+line tools`_ (solution used in this document).
+
+.. _platformio: https://platformio.org
+.. _`command line tools`: https://docs.platformio.org/en/latest/core/index.html
 
 Configuration
-=============
-
-Configuration of the AR488 is achieved by defining a number of directives. This can be
-done either by editing the `AR488_Config.h` file (more suitable if you use the Arduino
-IDE to compile the firmware), or via the ``-D`` compilation flag, which can typically be
-done in the `platforio.ini` file if you are using PlatformIO to build the firmware.
-
-This is a C++ style header file containing various definition statements, also known as
-‘define macros’ , starting with keyword `#define`, that can be used to configure the
-firmware. The `AR488_config.h` file must be included in the main AR488 sketch as well as
-any other module header file (e.g. `AR488_Layouts.cpp` and `AR488_Layouts.h`) with an
-include statement:
-
-.. code-block:: c++
-
-   #include "AR488_Config.h
-
-A number of these definition statements are contained within an ``#ifdef .. #endif``
-construct, some of which may contain additional #else or #elif elements. The presence of
-these constructs is necessary and they should not be changed or removed. Only the
-definitions within them should be changed as required. Nothing should need to be changed
-in any other file.
-
-Firmware version
-----------------
-
-Use this in the `AR488_Config.h` file:
-
-.. code-block:: c++
-
-   #define FWVER "AR488 GPIB controller, ver. 0.48.08, 27/01/2020"
-
-or, in the `platformio.ini` file:
-
-.. code-block:: ini
-
-   [env:yourenv]
-   build_flags = -D FWVER="AR488 GPIB controller, ver. 0.48.08, 27/01/2020"
-
-This entry should not exceed 47 characters.
-
-
-Board Selection and serial port configuration
----------------------------------------------
-
-The AR488 supports a number of Arduino AVR boards, for which most of the configuration
-parameters are pre-configured. For ESP32 boards and other unsupported AVR, a custom GPIO
-pin layout which can be defined by the user in the Custom Board Layout section. If a
-custom GPIO pin layout is to be used, then following entry must be defined:
-
-.. code-block:: c++
-
-   #define AR488_CUSTOM
-
-or
-
-.. code-block:: ini
-
-   [env:yourenv]
-   build_flags = -D AR488_CUSTOM
-
-
-The section contains definitions for two boards, namely the Uno and the Nano. Only ONE
-of these should be selected by removing the preceding comment characters:
-
-.. code-block:: c++
-
-   #define AR488_UNO
-   //#define AR488_NANO
-
-The default entry is ``AR488_UNO``, which selects the pre-defined template for the
-Arduino UNO board. Selecting ``AR488_NANO`` will select the pre-defined template for the
-Nano board. When using the Arduino IDE, in order to compile the sketch for the selected
-board, in addition to selecting the template in ``AR488_Config.h``, the correct board
-must be selected in the Board Manager within the Arduino IDE (see the ``Tools | Board:``
-menu).
-
-With PlatformIO, the proper board must be selected in the `platformio.ini` file.
-
-
-Following this are definitions for the serial port:
-
-.. code-block:: c++
-
-   #define AR_HW_SERIAL
-   #ifdef AR_HW_SERIAL
-     #define AR_SERIAL_PORT Serial
-   #else
-     // Select software serial port
-     #define AR_SW_SERIAL
-   #endif
-
-By default, the most commonly used serial port for a particular board will be enabled.
-In the example above, the hardware port named Serial is selected. To switch between the
-default hardware port and a SoftwareSerial port, it is necessary only to comment out
-``#define AR_HW_SERIAL`` by preceding the line with ``//``.
-
-The section for the 32u4 (Micro/Leonardo) is similar, except by default
-``AR_CDC_SERIAL`` is enabled and switching is between the ``USB CDC`` port and the
-hardware port ``Serial1``.
-
-The Mega 2560 has 4 hardware serial ports so either ``Serial``, ``Serial1``, ``Serial2``
-or ``Serial3`` must be selected. Most likely the default port named Serial will be used
-although other options are possible if required. However, please note that the default
-GPIO pin layout for the Mega 2560 board (``AR488_MEGA2560_D``) uses the pins assigned to
-``Serial2`` for other purposes, so this cannot be used as a serial port with that
-particular layout definition. However, it can be used with the E1 and E2 definitions.
-
-For any board, adding the line ``#define AR_SW_SERIAL`` and commenting out the
-``AR_HW_SERIAL`` and/or ``AR_CDC_SERIAL`` definitions will invoke the `SoftwareSerial
-<https://www.arduino.cc/en/Reference/SoftwareSerial>`_ library. When a SoftwareSerial_
-port is required, then the GPIO pins as well as the baud rate to be used will need to be
-configured in the following `Software Serial port configuration`_ section.
-
-Where a board has more than one hardware or CDC serial port available, it will be
-necessary to correctly specify the Arduino name of the serial port to be used. For the
-Uno and Nano this will always be ``Serial`` because those boards have only one UART and
-therefore only one hardware serial port. Other boards have more than one serial port
-available. For example, on the Pro Micro , enabling the hardware port rather than the
-CDC port will automatically select ``Serial1`` instead of ``Serial``. For the Mega 2560
-there are four choices and the correct port name must be chosen by uncommenting the
-appropriate line, e.g:
-
-.. code-block:: c++
-
-   #define AR_SERIAL_PORT Serial1
-
-The remaining choices must be commented out by preceding them with ``//``.
-
-It should be noted that for any board, only ONE serial port can be used and therefore
-only one port should be enabled.
-
-**It is important to make sure that the correct board is selected in the Arduino IDE
-Boards Manager (Tools => Board) otherwise the sketch will not compile correctly.**
-
-
-Software Serial port configuration
-----------------------------------
-
-The SoftwareSerial_ library can be used with any board provided that at least two pins
-are available. One of these must be a ``PWM`` enabled GPIO pin which is required to
-emulate the transmit (``Tx``) output for the serial two wire connection. The receive
-(``Rx``) pin can be assigned any available GPIO pin.
-
-Enabling SoftwareSerial can be done by removing the comment characters (``//``)
-preceding the ``#define AR_SW_SERIAL`` entry in the relevant board selection section. In
-addition, the pins to be used as well as the board rate will need to be configured in
-the Software Serial Support section as follows:
-
-.. code-block:: c++
-
-   #ifdef AR_SW_SERIAL
-   #define AR_SW_SERIAL_RX 53
-   #define AR_SW_SERIAL_TX 51
-   #define AR_SERIAL_BAUD 57600
-   #else
-   #define AR_SERIAL_BAUD 115200
-   #endif
-
-The appropriate GPIO pin numbers should be specified after the ``#define
-AR_SW_SERIAL_RX`` and the ``#define AR_SW_SERIAL_TX`` statements within the ``#ifdef
-AR_SW_SERIAL`` clause. The baud rate should be specified here as well after ``#define
-AR_SERIAL_BAUD``. Please note that, when using SoftwareSerial, the maximum baud rate
-that can be achieved reliably is 57600 baud.
-
-The hardware/CDC serial port baud rate is specified after the ``#else`` statement. The
-default hardware baud rate is 115200, but any valid baud rate can be specified.
-
-Please note also, that when using USB CDC ports, the Arduino board will NOT be reset
-when a serial connection is made over USB as is the case with Uno and Nano boards. The
-reset button must be pressed in order to reset the board. The Arduino IDE seems to take
-care of programming the board automatically but when using the Arduino IDE on Linux, the
-modemmanager service will need to be disabled as it interferes with serial ports and
-disrupts the normal operation of the programming process, causing boards to end up in a
-state where they can no longer be programmed over USB. Boards that have been disabled in
-this way can be recovered by uploading a bootloader to them using an AVR programmer.
-
-Linux Mint (and probably Ubuntu) will have this service enabled and running in the
-background by default. This service is not required but may be useful in the event that
-a serial modem is connected to the PC.
-
-Serial Interrupt Handling
--------------------------
-
-All AVR boards support `serialEvent
-<https://www.arduino.cc/reference/en/language/functions/communication/serial/serialevent/>`_.
-This was used in previous versions of AR488 but its use is now deprecated. The Arduino
-has no hardware interrupt to signal a character being received into the Arduino serial
-buffer. The `serialEvent`_ function is actually aliased to the `serial.available()
-<https://www.arduino.cc/reference/en/language/functions/communication/serial/available/>`_
-function and is executed at the end of every iteration of ``void loop()``. Non-Arduino
-boards (e.g. STM32) may not support `serialEvent`_ so for reasons of consistency between
-different boards, `serialEvent`_ is not used. Instead, a serial event handler is called
-at the end of every loop iteration.
-
-When working with programs and scripts (e.g. Python), it should be bourne in mind that
-the Arduino is only 64 bytes in size. Due to the memory constraints of the Arduino, the
-additional processing buffer provided by the AR488 program is also limited to only 128
-bytes. There is also no handshaking between the PC and the Arduino serial port. Although
-the Arduino can keep up pretty well, the serial input buffer can easily overflow with
-loss of characters if data is passed too quickly. This means that a bit of trial and
-error may be required when working with scripts to establish whether and how much delay
-is required between commands. A short delay may sometimes be needed to avoid a buffer
-overflow. The amount of delay will depend on factors such as the interface hardware
-being used, the time taken for the instrument to respond, as well as the GPIB speed of
-the instrument being addressed.
-
-Detection of SRQ and ATN pin states
------------------------------------
-
-Arduino AVR boards support interrupts to detect a change in pin states and this has been
-implemented for the UNO, NANO and MEGA boards to improve response. When a supported
-board template has been selected, (see the `Board Selection and serial port
-configuration`_ section) and ``AR488_CUSTOM`` is not in use, then ``USE_INTERRUPTS``
-will be defined and certain interrupts activated by default.
-
-Other boards may not support interrupts and interrupts cannot be used with the custom
-GPIO pin layout. When ``AR488_CUSTOM`` is defined and in used, ``USE_INTERRUPTS`` will
-not get defined and interrupts are not activated. Instead, pin states are detected
-during each iteration of the ``void loop()`` function. When a non-AVR or unsupported
-board is selected as the compilation target, then ``USE_INTERRUPTS`` should be commented
-out and not used.
-
-The section in AR488_Config.h looks as follows:
-
-.. code-block:: c++
-
-   #ifdef __AVR__
-     // For supported boards use interrupt handlers
-     #if defined (AR488_UNO) || defined (AR488_NANO) || defined (AR488_MEGA2560) || defined (AR488_MEGA32U4)
-       #ifndef AR488_CUSTOM
-         #define USE_INTERRUPTS
-	   #endif
-     #endif
-   #endif
-
-
-The entry should be preceded by ``//`` to indicate that it has been commented out.
-Interrupts are used by default on supported boards because they usually respond faster
-than in-loop checking.
-
-
-SN7516x GPIB transceiver support
---------------------------------
-
-Support for the SN75160 and SN75161 GPIB transceiver integrated circuits can be enabled
-by uncommenting the following line:
-
-.. code-block:: c++
-
-   //#define SN7516X
-
-The pins used to control the ICs are defined in the section that follows:
-
-.. code-block:: c++
-
-   #ifdef SN7516X
-     #define SN7516X_TE 6
-   // #define SN75161_DC 13
-   #endif
-
-Specify the pin to be used for the ``SN7516X_TE`` signal. The above example shows pin 6
-being used and this is connected to the talk-enable (``TE``) pin on both ICs. The
-``SN75161`` handles the GPIB control signals and in addition to the ``TE`` pin, also has
-a direction-control (``DC``) pin. This is used to determine controller or device mode
-operation. A GPIO pin can be assigned to drive this pin, in which case the
-``SN75151_DC`` definition shown above should be uncommented and an appropriate GPIO pin
-number assigned.
-
-Alternatively, since the ``REN`` signal is asserted in controller mode and un-asserted
-in device mode, this signal can be used to drive the ``DC`` pin of the ``SN75161``. In
-this case, the ``SN75161_DC`` definition should remain commented out and the GPIO pin
-assigned to the REN signal should be connected to both ``DC`` and ``REN`` on the
-``SN75161`` IC. There is one small caveat when using this configuration. The custom
-``++ren`` command, which is used to turn the ``REN`` line on and off, cannot be used and
-will just return::
-
-  Unavailable.
-
-If a separate GPIO pin is used to control DC then the ``++REN`` command will return the
-status of ``REN`` as usual. (See ``++ren`` in the `Custom Commands` section of the
-:ref:`Command Reference`).
-
-Bluetooth HC05 module Options
------------------------------
-
-This section is used to configure Bluetooth HC05 module options and looks like the
-below:
-
-.. code-block:: c++
-
-   //#define AR_BT_EN 12  // Bluetooth enable and control pin
-   #ifdef AR_BT_EN
-    #define AR_BT_BAUD 115200     // Bluetooth module preferred baud rate
-    #define AR_BT_NAME "AR488-BT" // Bluetooth device name
-    #define AR_BT_CODE "488488"   // Bluetooth pairing code
-   #endif
-
-To enable Bluetooth HC05 module auto-configuration, the first line needs to have the
-preceding comment characters (``//``) removed and a GPIO pin assigned. It is then
-necessary to set the configuration parameters, including baud rate, the name that the
-device will be identified with and the pairing code. The ``AR_BT_BAUD`` parameter must
-not have double quotes around it.
-
-By default, the name is ``AR488-BT`` and the pairing code is ``488488``. The HC05 module
-only needs connecting to the ``RX/TX`` pins of a serial port and it will be
-automatically configured with these parameters on interface start-up.
-
-This feature cannot work with the HC06 module as it does not have management mode or an
-enable pin implemented. Full details of Bluetooth configuration and wiring are included
-in the separate `AR488 Bluetooth Support` supplement.
-
-Debug options
 -------------
 
-The AR488 can send certain debug messages to a serial port which can be helpful when
-trying to diagnose a problem. These should not be required or enabled for normal running
-of the interface, but if required for debugging, one or more of the following can be
-enabled by removing the preceding ``//`` comment characters:
+The entry point for choosing the target board to compile the formware for, as
+well as configuring the compile-time options is the ``platformio.ini`` file
+located at the root of the source code directory.
 
-.. code-block:: c++
+Besides the main ``[platformio]`` section, any ``[env:xxx]`` section defines a
+new target for with the firmware can be built.
 
-   //#define DEBUG1  // getCmd
-   //#define DEBUG2  // setGpibControls
-   //#define DEBUG3  // gpibSendData
-   //#define DEBUG4  // spoll_h
-   //#define DEBUG5  // attnRequired
-   //#define DEBUG6  // EEPROM
-   //#define DEBUG7  // gpibReceiveData
-   //#define DEBUG8  // ppoll_h
-   //#define DEBUG9  // bluetooth
+The main configuration for a given target is achieved via a number of compiler
+variable given as build flags.
 
-By default, debug messages will be sent to the serial port that is used for
-communication. Where the interface provides additional serial ports or where there are
-sufficient GPIO pins available to use `SoftwareSerial`_, it is possible to send debug
-messages to an alternative serial port. This has the advantage that debug messages will
-no longer interfere with normal interface communications.
+Possible variables are:
 
-The debug messages can be viewed on the alternative ``debug`` port while normal
-interface operations are in progress on the communications port.
+- ``AR488_CUSTOM``: if set, the pin mapping must be provided via a series of
+  build flags.
 
-To enable this feature uncomment the following line in the ``Debug Options`` section in
-``AR488_Config.h``:
+- ``AR488_WIFI_ENABLE``: if set, enable the ESP32 wifi for wireless
+  communication protocol.
 
-.. code-block:: c++
+- ``AR488_BT_ENABLE``: if set, enable the ESP32 Bluetooth for wireless
+  communication protocol.
 
-   //#define DB_SERIAL_PORT Serial1
+- ``USE_MACROS``: enable support for run-time configurable macros (see
+  :ref:`macos`_)
 
-Set the serial port to the port that will receive the debug messages. Configure the baud
-rate, set the serial port type, and if using `SoftwareSerial`_, the GPIO pins to be
-used, for example:
+- ``HAS_HELP_COMMAND``: enable support for the ``++help`` command; on limited
+  boards (like some AVR boards), this can consume too much storage memory and
+  make the firmmware not fit in the flash storage. On ESP32 boards, there is no
+  reason not to enable it.
 
-.. code-block:: c++
+- ``BOARD_HAS_PSRAM``: activate usage od PSRAM on ESP32 boards that have
+  support for it; this is generally required if you have many features enabled
+  (thus need mode RAM than the stock one, especially when using wifi etc.).
 
-   #define DB_SERIAL_BAUD 57600
-   #define DB_SW_SERIAL
-   #ifdef DB_SW_SERIAL
-     #define DB_SW_SERIAL_RX 53
-     #define DB_SW_SERIAL_TX 51
-   #endif
+- ``SN7516X``: enable support for SN76160 and SN75161/2 transceivers between
+  the ESP32 board and the GPIB bus. If set, you need to configure also the
+  control pins of the transceivers (see below).
 
-The above will configure a SoftwareSerial_ port at 57600 baud on GPIO pins 53 and 51.
-Please note that the maximum advisable speed for a SoftwareSerial_ port is 57600 baud.
+- ``DIOX=nn``: set the pin mapping for the GPIB data pin ``Dx`` (used if
+  ``AR488_CUSTOM`` is set).
 
-Debug messages do not include messages shown when verbose mode is enabled with the
-``++verbose`` command. When the interface is being directly controlled by another
-program, verbose mode should be turned off otherwise verbose messages may interfere with
-normal operations.
+- ``REN|IFC|NDAC|NRFD|DAV|EOI|ATN|SRQ=nn``: set the pin mapping for GPIB
+  control pins (idem).
 
-Custom Board Layout Section
----------------------------
+- ``SN7516X_TE|SN7516X_DC=nn``: pin mapping for the SN7616x TE and DC pins
 
-The custom board layout section in the Config.h file can be used to create a custom pin
-layout for the AR488. This can be helpful for non-Arduino boards and where an adjustment
-to the layout is required in order to accommodate additional hardware. By default, the
-definition implements the Uno layout:
+- ``SN7516X_SC=nn``: pin mapping for the SN76162 SC pin (only required if using
+  the SN75162B transceiver).
 
 
-.. code-block:: c++
+TO enable one of the features listed above, just add the ``-D XXXFEATURE`` in
+the ``build_flags`` section of your build target.
 
-   #define DIO1  A0  /* GPIB 1  */
-   #define DIO2  A1  /* GPIB 2  */
-   #define DIO3  A2  /* GPIB 3  */
-   #define DIO4  A3  /* GPIB 4  */
-   #define DIO5  A4  /* GPIB 13 */
-   #define DIO6  A5  /* GPIB 14 */
-   #define DIO7  4   /* GPIB 15 */
-   #define DIO8  5   /* GPIB 16 */
+The ``esp32dev`` example below is a configuration section for a ESP32-devkitc
+based board with SN75160/2 transceiver and all options enabled:
 
-   #define IFC   8   /* GPIB 9  */
-   #define NDAC  9   /* GPIB 8  */
-   #define NRFD  10  /* GPIB 7  */
-   #define DAV   11  /* GPIB 6  */
-   #define EOI   12  /* GPIB 5  */
+.. code-block:: ini
 
-   #define SRQ   2   /* GPIB 10 */
-   #define REN   3   /* GPIB 17 */
-   #define ATN   7   /* GPIB 11 */
+   [env:esp32dev]
+   platform = espressif32
+   framework = arduino
+   board = esp32dev
+   board_build.partitions = ttgo.csv
+   build_flags =
+        -D AR488_CUSTOM
+        -D USE_MACROS
+        -D HAS_HELP_COMMAND
+        -D AR488_WIFI_ENABLE
+        -D BOARD_HAS_PSRAM
+        -D AR488_BT_ENABLE
+        -D SN7516X -D SN7516X_TE=15 -D SN7516X_DC=2
+        -D SN7516X_SC=0  # for 75162
+        -D DIO1=33 -D DIO2=32 -D DIO3=26  -D DIO4=25
+        -D DIO5=14 -D DIO6=27 -D DIO7=13  -D DIO8=12
+        -D REN=23  -D IFC=22  -D NDAC=21  -D NRFD=19
+        -D DAV=18  -D EOI=17  -D ATN=4    -D SRQ=16
+
+Note: this example uses a custom partition scheme for the flash memory
+(otherwise the full-featured firmware does not fit in a sigle A/B partition).
 
 
-To make use of a custom layout, ``AR488_CUSTOM`` must be selected from the list of
-boards at the beginning of the ``Config.h`` file and the pin numbers/designations in the
-centre column (shown in bold) should be configured as required.
+Building
+--------
 
-Please note that on some MCU boards, a number of GPIO pins may not be available as
-inputs and/ or outputs despite a pad or connector being present. Please check the board
-documentation. Sometimes such information is revealed only in online forum discussions
-or blogs.
 
-When ``AR488_CUSTOM`` is defined, interrupts cannot be used to detect pin states and
-therefore ``USE_INTERRUPTS`` will not be defined and interrupts will not be activated.
-Pin states will be checked on every iteration of ``void loop()`` instead.
+Once the target is properly configured in the ``platformio.ini`` file, you can
+build it using the standard platformio environment. Using the cli tools,
+building the ``esp32dev`` target would be:
+
+.. code-block:: bash
+
+   AR488-ESP32$ pio run -e esp32dev
+   Processing esp32dev (board: esp32dev; platform: espressif32; framework: arduino)
+   ----------------------------------------------------------------------------------------------
+   Verbose mode can be enabled via `-v, --verbose` option
+   CONFIGURATION: https://docs.platformio.org/page/boards/espressif32/esp32dev.html
+   PLATFORM: Espressif 32 (6.0.0) > Espressif ESP32 Dev Module
+   HARDWARE: ESP32 240MHz, 320KB RAM, 4MB Flash
+   DEBUG: Current (cmsis-dap) External (cmsis-dap, esp-bridge, esp-prog, iot-bus-jtag, jlink, minimodule, olimex-arm-usb-ocd, olimex-arm-usb-ocd-h, olimex-arm-usb-tiny-h, olimex-jtag-tiny, tumpa)
+   PACKAGES:
+    - framework-arduinoespressif32 @ 3.20006.221224 (2.0.6)
+    - tool-esptoolpy @ 1.40400.0 (4.4.0)
+    - toolchain-xtensa-esp32 @ 8.4.0+2021r2-patch5
+   Converting AR488.ino
+   LDF: Library Dependency Finder -> https://bit.ly/configure-pio-ldf
+   LDF Modes: Finder ~ chain, Compatibility ~ soft
+   Found 33 compatible libraries
+   Scanning dependencies...
+   Dependency Graph
+   |-- EEPROM @ 2.0.0
+   |-- Preferences @ 2.0.0
+   |-- WiFi @ 2.0.0
+   |-- BluetoothSerial @ 2.0.0
+   Building in release mode
+   Compiling .pio/build/esp32dev/src/AR488.ino.cpp.o
+   Retrieving maximum program size .pio/build/esp32dev/firmware.elf
+   Checking size .pio/build/esp32dev/firmware.elf
+   Advanced Memory Usage is available via "PlatformIO Home > Project Inspect"
+   RAM:   [==        ]  17.2% (used 56464 bytes from 327680 bytes)
+   Flash: [=======   ]  74.0% (used 1503421 bytes from 2031616 bytes)
+   ================================ [SUCCESS] Took 3.67 seconds ================================
+
+   Environment    Status    Duration
+   -------------  --------  ------------
+   esp32dev       SUCCESS   00:00:03.671
+   ================================ 1 succeeded in 00:00:03.671 ================================
+
+
+The generated firmware file is located in ``.pio/build/esp32dev/firmware.bin``.
+
+Note: if you do not specify a target (``-e xxx``) then all the targets defined
+in the ``platformio.ini`` file will be built, which can take quite a while.
+
+Uploading this to the board is then a simple matter of using the command:
+
+.. code-block:: bash
+
+   AR488-ESP32$ pio run -e esp32dev -t upload
+   [...]

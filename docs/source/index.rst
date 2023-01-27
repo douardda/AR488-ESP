@@ -1,40 +1,43 @@
-.. AR488 documentation master file, created by
-   sphinx-quickstart on Sat Oct 16 11:13:19 2021.
-   You can adapt this file completely to your liking, but it should at least
-   contain the root `toctree` directive.
 
-AR488 GPIB Controller
-=====================
+AR488-ESP32 GPIB Controller
+===========================
 
-The AR488 GPIB controller is an Arduino-based controller for interfacing with `IEEE488
-GPIB <https://en.wikipedia.org/wiki/IEEE-488>`_ devices.
+The AR488-ESP32 GPIB controller is an ESP32/Arduino-based controller for
+interfacing with `IEEE488 GPIB <https://en.wikipedia.org/wiki/IEEE-488>`_
+devices, implementing the Prologix_ serial communication protocol.
 
-The code supports AVR based arduino boards and has been tested on Arduino_ Uno_, Nano_,
-`Mega 2560`_, `Micro 32U4`_ boards and provides a low cost alternative to other
-commercial interfaces.
-
-It also supports ESP32_ boards and has been tested on several `ESP32 and ESP32S2
+The code supports ESP32_ boards and has been tested on several `ESP32 and ESP32S2
 devkits`_. These boards come with support for wifi connection and serial over Bluetooth
 (not supported on ESP32S2.)
 
-To build an interface, at least one of the aforementioned Arduino of ESP32 boards will
-be required to act as the interface hardware. Connecting to an instrument will require a
-16 core cable and a suitable `IEEE488 connector
-<https://en.wikipedia.org/wiki/IEEE-488#Connectors>`_. This can be salvaged from an old
-GPIB cable or purchased from electronics parts suppliers. Alternatively, a PCB board can
-be designed to incorporate a directly mounted IEEE488 connector.
+Being based on the orignal `AR488`_ code (by Twilight-Logic and others), it
+also supports AVR based arduino boards and has been tested on Arduino_ Uno_,
+Nano_, `Mega 2560`_, `Micro 32U4`_ boards, but these boards having very
+constrained resources cann support all the features the ESP32 based ones, so it
+is strongly recommemded to
 
-The interface firmware can optionally support the `SN75160
-<https://www.ti.com/product/SN75160B>`_ and `SN75161
-<https://www.ti.com/product/SN75161B>`_ GPIB transceiver integrated circuits. Details of
-construction and the mapping of Arduino pins to GPIB control signals and the data bus
-are explained in the :ref:`Building an AR488 GPIB Interface` section.
+To build an interface, at least one of the aforementioned Arduino or ESP32
+board will be required to act as the interface hardware. Connecting to an
+instrument will require a 16 core cable and a suitable `IEEE488 connector
+<https://en.wikipedia.org/wiki/IEEE-488#Connectors>`_. This can be salvaged
+from an old GPIB cable or purchased from electronics parts suppliers.
+Alternatively, a PCB board can be designed to incorporate a directly mounted
+IEEE488 connector.
 
-The interface firmware supports standard Prologix_ commands and adheres closely to the
-Prologix syntax but there are some minor differences. In particular, due to issues with
-the longevity of the Arduino EEPROM memory, the ``++savecfg`` command has been
-implemented differently. Details of all commands can be found in the :ref:`Command Reference`
+The interface firmware can optionally support the
+`SN75160 <https://www.ti.com/product/SN75160B>`_ and
+`SN75161 <https://www.ti.com/product/SN75161B>`_ or
+`SN75162 <https://www.ti.com/product/SN75162B>`_ GPIB transceiver integrated
+circuits.
+
+Details of construction and the mapping of board pins to GPIB control signals
+and the data bus are explained in the :ref:`Building an AR488-ESP32 GPIB Interface`
 section.
+
+The interface firmware supports standard Prologix_ commands and adheres closely
+to the Prologix syntax but there are some minor differences and a number of
+additopnal commands. Details of all commands can be found in the :ref:`Command
+Reference` section.
 
 .. _Arduino: https://arduino.cc
 .. _Uno: https://store.arduino.cc/products/arduino-uno-rev3
@@ -44,9 +47,8 @@ section.
 
 .. _ESP32: https://www.espressif.com
 .. _`ESP32 and ESP32S2 devkits`: https://www.espressif.com/en/products/devkits
-
+.. _`AR488`: https://github.com/Twilight-Logic/AR488
 .. _Prologix: http://prologix.biz/gpib-usb-4.2-faq.html
-
 
 
 Driver Installation
@@ -59,10 +61,12 @@ boards listed above, so no special driver installation is required.
 Firmware Upgrades
 -----------------
 
-The firmware is upgradeable via the Arduino IDE or the platformio_ `command line tool`_
-in the usual manner, however an AVR programmer can also be used to upload the firmware
-to the Arduino microcontroller. Pre-compiled firmwares for some boards are available
-from https://github.com/Twilight-Logic/AR488
+The firmware is upgradeable via the Arduino IDE or the platformio_ `command
+line tool`_ in the usual manner, however an AVR programmer can also be used to
+upload the firmware to the Arduino microcontroller. Pre-compiled firmwares for
+some boards are available from https://github.com/douardda/AR488-ESP32/releases
+but you will probably want to customize and compile your own versino of the
+firmware suitable for your setup and needs.
 
 .. _platformio: https://platformio.org
 .. _`command line tool`: https://docs.platformio.org/en/latest/core/index.html
@@ -80,13 +84,13 @@ The interface can be accessed via a number of software client programs:
 - Python scripts
 - Anything else that can use the Prologix syntax!
 
-When using direct USB-based serial connection, terminal clients can connect via a
-virtual COM port and should be set to 115200 baud, no parity, 8 data bits and 1 stop bit
-when connecting to the interface. On Linux, the port will be a TTY device such as
-``/dev/ttyUSB0`` or ``/dev/ttyACM0``.
+When using direct USB-based serial connection, terminal clients can connect via
+a virtual serial/COM port and should be set to 115200 baud, no parity, 8 data
+bits and 1 stop bit when connecting to the interface. On Linux, the port will
+be a TTY device such as ``/dev/ttyUSB0`` or ``/dev/ttyACM0``.
 
-For using Bluetooth or Wifi to connect to the AR488, please refer to the :ref:`Remote
-Connection` section.
+For using Bluetooth or Wifi to connect to the AR488-ESP32, please refer to the
+:ref:`Remote Connection` section.
 
 Specific considerations apply when using an Arduino based interface with EZGPIB and the
 KE5FX toolkit. These are described in the :ref:`EZGPIB` section.
@@ -206,18 +210,16 @@ a time, there can only be one device in "talk-only" mode on the bus, however mul
 Wireless communication
 ----------------------
 
-The AR488 interface can communicate using a Bluetooth module (HC05 or HC06). The
-firmware sketch supports auto-configuration of the Bluetooth HC05 module, the details of
-which can be found in the Configuration section and the AR Bluetooth Support supplement.
-Automatic configuration is not possible with a HC06 module so although this can be used
-to provide Bluetooth communication, it has to be configured manually.
-
+The AR488-ESP32 interface can communicate via Bluetooth or Wifi (beware not all
+ESP32 boards have support for Bluetooth). Details on remote communication can
+be found in the :ref:`Remote Connection` section.
 
 .. toctree::
    :maxdepth: 2
    :caption: Contents:
 
    configuration
+   quickstart
    commands
    macros
    build
