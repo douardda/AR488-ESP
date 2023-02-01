@@ -69,7 +69,7 @@
 #define CR   0xD    // Carriage return
 #define LF   0xA    // Newline/linefeed
 #define PLUS 0x2B   // '+' character
-
+#define BS   0x08   // backspace
 
 #define AR_CFG_SIZE 96  // ie. sizeof(AR488Conf) XXX recompute this
 

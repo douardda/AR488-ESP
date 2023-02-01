@@ -176,6 +176,14 @@ uint8_t Controller::parseInput(char c) {
         }
         addPbuf(c);
         break;
+	  case BS:
+        if (isEsc) {
+          addPbuf(c);
+          isEsc = false;
+		} else {
+			pbPtr--;
+		}
+		break;
       // Something else?
       default: // any char other than defined above
         // Buffer contains '++' (start of command). Stop sending data to serial port by halting GPIB receive.
