@@ -139,8 +139,8 @@ on the AR488-ESP32 sourcehut page. Please provide at minimum:
 
 ## Acknowledgements
 
-| ---- | ----- |
 | Emanuelle Girlando | Original project for the Arduino Uno |
+|------|-------|
 | Luke Mester | Testing of original Uno/Nano verions against Prologix |
 | Artag | Porting to the Arduino Micro (32u4) board |
 | Tom DG8SAQ | Plotting and printing |
