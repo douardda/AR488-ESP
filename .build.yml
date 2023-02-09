@@ -1,0 +1,39 @@
+image: debian/bullseye
+packages:
+  - curl
+  - python3-pip
+  - python3-sphinx
+  - python3-cairocffi
+sources:
+  - https://git.sr.ht/~douardda/AR488-ESP32
+oauth: pages.sr.ht/PAGES:RW
+environment:
+  site: douardda.srht.site
+tasks:
+  - setup: |
+      cd AR488-ESP32
+      pip install --user -U platformio
+      python3 -m platformio upgrade
+      pip install -r docs/requirements.txt
+  - build_fw: |
+      cd AR488-ESP32
+      python3 -m platformio run
+  - build_doc: |
+      cd AR488-ESP32/docs
+      make html
+      tar zcvf docs.tgz -C build/html .
+  - upload_fw: |
+      cd AR488-ESP32
+      mkdir firmwares
+      for fw in .pio/build/*/firmware.bin; do
+        cp $fw firmwares/$(basename `dirname $fw`).bin
+      done
+      tar zcvf firmwares.tgz firmwares
+  - upload_doc: |
+      cd AR488-ESP32/docs
+      tar zcvf docs.tgz -C build/html .
+      acurl -f https://pages.sr.ht/publish/$site -Fcontent=@docs.tgz
+
+artifacts:
+  - AR488-ESP32/docs/docs.tgz
+  - AR488-ESP32/firmwares.tgz
