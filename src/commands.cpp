@@ -24,7 +24,9 @@ static cmdRec cmdHidx [] = {
   { "eos",         3, &Controller::eos_h       },
   { "eot_char",    3, &Controller::eot_char_h  },
   { "eot_enable",  3, &Controller::eot_en_h    },
+#ifdef HAS_HELP_COMMAND
   { "help",        3, &Controller::help_h      },
+#endif
   { "ifc",         2, &Controller::ifc_h       },
   { "llo",         2, &Controller::llo_h       },
   { "loc",         2, &Controller::loc_h       },
@@ -47,7 +49,9 @@ static cmdRec cmdHidx [] = {
   { "default",     3, &Controller::default_h   },
   { "id",          3, &Controller::id_h        },
   { "idn",         3, &Controller::idn_h       },
-  { "macro",       2, &Controller::macro_h     },
+#ifdef USE_MACROS
+  { "macro",       3, &Controller::macro_h     },
+#endif
   { "ppoll",       2, &Controller::ppoll_h     },
   { "prompt",      3, &Controller::prompt_h    },
   { "ren",         2, &Controller::ren_h       },
@@ -1457,6 +1461,8 @@ static const char cmdHelp[] PROGMEM = {
   // additional commands
   "== Extension command set ==\n"
   "allspoll: Serial poll all instruments (alias: ++spoll all)\n"
+  "findrqs: Find device requesting service\n"
+  "findlstn: Find all devices listening on the GPIB bus\n"
   "dcl: Send unaddressed (all) device clear  [power on reset] (is the rst?)\n"
   "default: Set configuration to controller default settings\n"
   "id name: Show/Set the name of the interface\n"
