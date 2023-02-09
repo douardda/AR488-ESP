@@ -76,6 +76,32 @@ detected):
 
 .. code-block::
 
+   > ++auto 2
+   > ++findlstn
+   3 4 6 8 10 12 17 24 26
+   > ++addr 10
+   > *IDN?
+   HEWLETT-PACKARD,34970A,0,12-1-2
+
+   > ++addr 26
+   > *IDN?
+   HP 8904A Opts 02/01/03/05/  /  /  /  /  Firmware Revision 00790A Serial No 06958
+   > ++addr 4
+   > *IDN?
+   Hewlett-Packard, ESG-D3000B, GB38450564, B.03.86
+
+   > ++addr 8
+   > *IDN?
+   ADVANTEST,R3465,0,K03
+   > ++addr 12
+   > *IDN?
+   GIGA-TRONICS,8541C,1835243,4.09
+   > ^C
+
+You may prefer to manually poll individual devices as well:
+
+.. code-block::
+
    > ++verbose 1
    Verbose: ON
    > ++addr 4
@@ -137,16 +163,21 @@ Which would be like:
    Device at 24 spoll= 0
    Device at 26 spoll= 0
 
-The ``++auto`` feature is also supported; it atomatically request talk after an
-input command that ends with the ``?`` character (note that some devices do not
-like it too much):
+The ``++auto`` feature is also supported; it automatically requests talk after an
+input command, with several possible values:
+
+- ``++auto 0``: disable auto mode completely.
+- ``++auto 1``: "Prologix" mode; note that some devices do not like it too much). 
+- ``++auto 2``: "on query" mode; it will only request talk if the command ends with the ``?`` character.
+- ``++auto 3``: "continuous" mode; constantly read.
+
 
 .. code-block::
 
    AR488-ESP32$ pio device monitor -b 115200 --echo
    ++prompt 1
    Show prompt: ON
-   > ++auto 1
+   > ++auto 2
    > ++addr 4
    > *IDN?
    Hewlett-Packard, ESG-D3000B, GB38450564, B.03.86
