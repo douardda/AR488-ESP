@@ -13,6 +13,11 @@
 
 #endif
 
+#ifdef AR_ESP32S2_USB_CDC
+#include "USB.h"
+USBCDC UsbCdcSerial;
+#endif
+
 /********** BT SERIAL PORT DECLARATIONS **********/
 /* on ESP32, this comes as an extra serial port  */
 /* on Arduino, this is done using an HC05 like   */
@@ -23,6 +28,12 @@ Stream *arSerial = NULL;
 
 Stream* getSerialStream() {
   if (arSerial == NULL) {
+#if defined(AR_ESP32S2_USB_CDC)
+	arSerial =(Stream*) &(UsbCdcSerial);
+	UsbCdcSerial.begin();
+	USB.begin();
+
+#else
 #if defined(AR_CDC_SERIAL)
 	Serial_ *serial = &(AR_SERIAL_PORT);
 #elif defined(AR_HW_SERIAL)
@@ -34,6 +45,8 @@ Stream* getSerialStream() {
 #endif
 	serial->begin(AR_SERIAL_BAUD);
 	arSerial = (Stream*) serial;
+#endif
+
   }
   return arSerial;
 }
