@@ -35,15 +35,15 @@
    * section below
    */
   /* Serial ports */
-  #define AR_HW_SERIAL
+//  #define AR_HW_SERIAL
 #ifndef AR_SERIAL_PORT
-  #define AR_SERIAL_PORT Serial
+//  #define AR_SERIAL_PORT Serial
   //#define AR_SERIAL_PORT Serial1
   //#define AR_SERIAL_PORT Serial2
   //#define AR_SERIAL_PORT Serial3
   //#define AR_CDC_SERIAL
   //#define AR_SW_SERIAL
-  #define AR_BT_SERIAL_PORT Serial
+//  #define AR_BT_SERIAL_PORT Serial
 #endif
 
 /*** UNO and NANO boards ***/
